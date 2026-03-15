@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Réflexes & Contrôle — Jeu Go/No-Go</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --go-color: #2ecc71;
+    --nogo-color: #e74c3c;
+    --bg: #0f0e17;
+    --bg2: #1a1828;
+    --card: #23213a;
+    --accent: #f7c59f;
+    --accent2: #a78bfa;
+    --text: #fffffe;
+    --muted: #a9a9c8;
+    --star: #fbbf24;
+    --radius: 20px;
+    --shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    font-family: 'Nunito', sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow-x: hidden;
+  }
+
+  /* Starfield background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 30% 70%, rgba(255,255,255,0.2) 0%, transparent 100%),
+      radial-gradient(1px 1px at 55% 25%, rgba(255,255,255,0.35) 0%, transparent 100%),
+      radial-gradient(1px 1px at 75% 80%, rgba(255,255,255,0.25) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 45%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(2px 2px at 20% 40%, rgba(167,139,250,0.4) 0%, transparent 100%),
+      radial-gradient(2px 2px at 65% 60%, rgba(247,197,159,0.3) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 640px;
+    padding: 20px;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; flex-direction: column; align-items: center; gap: 20px; }
+  .screen.active { display: flex; }
+
+  /* ── HEADER ── */
+  .game-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(2rem, 7vw, 3.2rem);
+    text-align: center;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 1px;
+    filter: drop-shadow(0 2px 8px rgba(167,139,250,0.4));
+  }
+  .subtitle {
+    font-size: 1rem;
+    color: var(--muted);
+    text-align: center;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    box-shadow: var(--shadow);
+    width: 100%;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 32px;
+    border-radius: 50px;
+    border: none;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    letter-spacing: 0.5px;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent2), #7c3aed);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(124,58,237,0.4);
+  }
+  .btn-go {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    color: #fff;
+    font-size: 1.5rem;
+    padding: 20px 60px;
+    box-shadow: 0 4px 24px rgba(46,204,113,0.4);
+    min-width: 200px;
+  }
+  .btn-outline {
+    background: transparent;
+    border: 2px solid var(--accent2);
+    color: var(--accent2);
+  }
+  .btn-sm {
+    padding: 10px 22px;
+    font-size: 1rem;
+  }
+
+  /* ── DIFFICULTY SELECTOR ── */
+  .diff-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: 100%;
+  }
+  .diff-card {
+    background: var(--bg2);
+    border: 2px solid transparent;
+    border-radius: 16px;
+    padding: 16px 10px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .diff-card:hover { border-color: var(--accent2); transform: translateY(-2px); }
+  .diff-card.selected { border-color: var(--accent2); background: rgba(167,139,250,0.12); }
+  .diff-icon { font-size: 2rem; display: block; margin-bottom: 6px; }
+  .diff-name { font-family: 'Fredoka One', cursive; font-size: 1rem; }
+  .diff-desc { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+
+  /* ── GAME HUD ── */
+  .hud {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    width: 100%;
+  }
+  .hud-box {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 10px 8px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .hud-val {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+  .hud-lbl { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+  .hud-score .hud-val { color: var(--accent); }
+  .hud-rt .hud-val { color: var(--accent2); }
+  .hud-errors .hud-val { color: var(--nogo-color); }
+  .hud-combo .hud-val { color: var(--star); }
+
+  /* ── ARENA ── */
+  .arena {
+    width: 100%;
+    height: 300px;
+    background: var(--bg2);
+    border-radius: var(--radius);
+    border: 2px solid rgba(255,255,255,0.06);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stimulus-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .stimulus {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    transition: transform 0.1s;
+    position: relative;
+  }
+  .stimulus.go-stim {
+    background: radial-gradient(circle at 35% 35%, #4ade80, #16a34a);
+    box-shadow: 0 0 40px rgba(46,204,113,0.6), 0 0 80px rgba(46,204,113,0.2);
+    animation: pulse-go 0.6s ease-out;
+  }
+  .stimulus.nogo-stim {
+    background: radial-gradient(circle at 35% 35%, #f87171, #dc2626);
+    box-shadow: 0 0 40px rgba(231,76,60,0.6), 0 0 80px rgba(231,76,60,0.2);
+    animation: pulse-nogo 0.6s ease-out;
+  }
+
+  @keyframes pulse-go {
+    0% { transform: scale(0.3); opacity: 0; }
+    60% { transform: scale(1.12); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes pulse-nogo {
+    0% { transform: scale(0.3); opacity: 0; }
+    60% { transform: scale(1.12); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .stimulus-label {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.3rem;
+    letter-spacing: 1px;
+  }
+  .stimulus-label.go-label { color: var(--go-color); }
+  .stimulus-label.nogo-label { color: var(--nogo-color); }
+
+  .ready-msg {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.6rem;
+    color: var(--muted);
+    text-align: center;
+    animation: breathe 2s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+
+  /* Feedback overlay */
+  .feedback {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Fredoka One', cursive;
+    font-size: 3rem;
+    border-radius: var(--radius);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.1s;
+  }
+  .feedback.show { opacity: 1; animation: feedbk 0.5s ease-out forwards; }
+  .feedback.correct { background: rgba(46,204,113,0.15); color: #2ecc71; }
+  .feedback.wrong { background: rgba(231,76,60,0.15); color: #e74c3c; }
+  .feedback.too-slow { background: rgba(251,191,36,0.15); color: #fbbf24; }
+
+  @keyframes feedbk {
+    0% { opacity: 1; transform: scale(0.7); }
+    50% { opacity: 1; transform: scale(1.1); }
+    100% { opacity: 0; transform: scale(1); }
+  }
+
+  /* Progress bar */
+  .progress-wrap {
+    width: 100%;
+    height: 8px;
+    background: var(--bg2);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    border-radius: 10px;
+    transition: width 0.3s ease;
+  }
+
+  /* Timer ring */
+  .timer-ring {
+    position: absolute;
+    bottom: 14px;
+    right: 14px;
+  }
+  .timer-ring svg { transform: rotate(-90deg); }
+  .timer-track { fill: none; stroke: rgba(255,255,255,0.08); stroke-width: 4; }
+  .timer-fill {
+    fill: none;
+    stroke: var(--accent2);
+    stroke-width: 4;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.05s linear, stroke 0.3s;
+  }
+  .timer-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Fredoka One', cursive;
+    font-size: 0.85rem;
+    color: var(--accent2);
+  }
+
+  /* Instructions legend */
+  .legend {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+    justify-content: center;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--card);
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    flex: 1;
+    justify-content: center;
+  }
+  .dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-go { background: var(--go-color); }
+  .dot-nogo { background: var(--nogo-color); }
+
+  /* ── RESULTS ── */
+  .result-badge {
+    font-size: 4rem;
+    text-align: center;
+    animation: popIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275);
+  }
+  @keyframes popIn {
+    0% { transform: scale(0); }
+    100% { transform: scale(1); }
+  }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    width: 100%;
+  }
+  .stat-item {
+    background: var(--bg2);
+    border-radius: 14px;
+    padding: 14px;
+    text-align: center;
+  }
+  .stat-val {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.8rem;
+  }
+  .stat-lbl { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+  .stat-score .stat-val { color: var(--accent); }
+  .stat-rt .stat-val { color: var(--accent2); }
+  .stat-acc .stat-val { color: var(--go-color); }
+  .stat-inh .stat-val { color: var(--star); }
+
+  .perf-msg {
+    font-size: 1rem;
+    font-weight: 700;
+    text-align: center;
+    padding: 14px 20px;
+    border-radius: 14px;
+    width: 100%;
+  }
+  .perf-excellent { background: rgba(46,204,113,0.12); color: var(--go-color); border: 1px solid rgba(46,204,113,0.3); }
+  .perf-good { background: rgba(167,139,250,0.12); color: var(--accent2); border: 1px solid rgba(167,139,250,0.3); }
+  .perf-ok { background: rgba(251,191,36,0.12); color: var(--star); border: 1px solid rgba(251,191,36,0.3); }
+  .perf-practice { background: rgba(231,76,60,0.12); color: var(--nogo-color); border: 1px solid rgba(231,76,60,0.3); }
+
+  .btn-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+  /* ── INTRO TUTORIAL ── */
+  .tuto-steps { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+  .tuto-step {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--bg2);
+    border-radius: 14px;
+    padding: 14px 18px;
+  }
+  .tuto-icon { font-size: 2rem; flex-shrink: 0; }
+  .tuto-text { font-size: 0.9rem; line-height: 1.4; }
+  .tuto-text strong { color: var(--accent); }
+
+  /* level tag */
+  .level-tag {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .level-easy { background: rgba(46,204,113,0.15); color: var(--go-color); }
+  .level-medium { background: rgba(251,191,36,0.15); color: var(--star); }
+  .level-hard { background: rgba(231,76,60,0.15); color: var(--nogo-color); }
+
+  /* countdown */
+  .countdown-num {
+    font-family: 'Fredoka One', cursive;
+    font-size: 6rem;
+    animation: countPop 0.8s cubic-bezier(0.175,0.885,0.32,1.275);
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  @keyframes countPop {
+    0% { transform: scale(2); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* combo animation */
+  .combo-pop {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.1rem;
+    color: var(--star);
+    animation: floatUp 1s ease-out forwards;
+    pointer-events: none;
+  }
+  @keyframes floatUp {
+    0% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-40px); }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- ══ SCREEN: ACCUEIL ══ -->
+  <div class="screen active" id="screen-home">
+    <div style="text-align:center; padding-top:10px;">
+      <div style="font-size:3.5rem; margin-bottom:8px;">🧠</div>
+      <div class="game-title">Réflexes & Contrôle</div>
+      <div class="subtitle">Jeu d'entraînement cognitif — Inhibition Go/No-Go</div>
+    </div>
+
+    <div class="card">
+      <div class="tuto-steps">
+        <div class="tuto-step">
+          <div class="tuto-icon">🟢</div>
+          <div class="tuto-text"><strong>GO !</strong> Quand tu vois la cible verte, appuie sur le bouton ou la touche <strong>ESPACE</strong> le plus vite possible.</div>
+        </div>
+        <div class="tuto-step">
+          <div class="tuto-icon">🔴</div>
+          <div class="tuto-text"><strong>STOP !</strong> Quand tu vois la cible rouge, ne fais rien. Retiens-toi !</div>
+        </div>
+        <div class="tuto-step">
+          <div class="tuto-icon">⚡</div>
+          <div class="tuto-text">Plus tu es <strong>rapide et précis</strong>, plus tu gagnes de points. Attention aux pièges !</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:100%;">
+      <div class="subtitle" style="margin-bottom:12px; text-align:left;">Choisir la difficulté :</div>
+      <div class="diff-grid">
+        <div class="diff-card selected" onclick="selectDiff(this,'easy')">
+          <span class="diff-icon">🌱</span>
+          <div class="diff-name">Facile</div>
+          <div class="diff-desc">Stimuli lents, 60% GO</div>
+        </div>
+        <div class="diff-card" onclick="selectDiff(this,'medium')">
+          <span class="diff-icon">🔥</span>
+          <div class="diff-name">Moyen</div>
+          <div class="diff-desc">Stimuli normaux, 50% GO</div>
+        </div>
+        <div class="diff-card" onclick="selectDiff(this,'hard')">
+          <span class="diff-icon">💀</span>
+          <div class="diff-name">Difficile</div>
+          <div class="diff-desc">Stimuli rapides, 40% GO</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="startCountdown()">
+      🚀 Commencer la partie !
+    </button>
+  </div>
+
+  <!-- ══ SCREEN: COUNTDOWN ══ -->
+  <div class="screen" id="screen-countdown">
+    <div class="countdown-num" id="countdown-num">3</div>
+    <div class="subtitle">Prépare-toi !</div>
+  </div>
+
+  <!-- ══ SCREEN: JEU ══ -->
+  <div class="screen" id="screen-game">
+
+    <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+      <div>
+        <div class="game-title" style="font-size:1.4rem;">Réflexes & Contrôle</div>
+        <span class="level-tag" id="level-tag">Facile</span>
+      </div>
+      <div style="text-align:right; font-size:0.8rem; color:var(--muted);">
+        Essai <span id="trial-current" style="color:var(--text);font-weight:700;">1</span>
+        / <span id="trial-total">20</span>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+    </div>
+
+    <div class="hud">
+      <div class="hud-box hud-score">
+        <div class="hud-val" id="hud-score">0</div>
+        <div class="hud-lbl">Score</div>
+      </div>
+      <div class="hud-box hud-rt">
+        <div class="hud-val" id="hud-rt">—</div>
+        <div class="hud-lbl">Temps (ms)</div>
+      </div>
+      <div class="hud-box hud-errors">
+        <div class="hud-val" id="hud-errors">0</div>
+        <div class="hud-lbl">Erreurs</div>
+      </div>
+      <div class="hud-box hud-combo">
+        <div class="hud-val" id="hud-combo">x1</div>
+        <div class="hud-lbl">Combo</div>
+      </div>
+    </div>
+
+    <div class="arena" id="arena">
+      <div class="stimulus-container" id="stimulus-container">
+        <div class="ready-msg" id="ready-msg">Attends le signal…</div>
+      </div>
+      <div class="feedback" id="feedback"></div>
+      <div class="timer-ring" id="timer-ring" style="display:none;">
+        <svg width="48" height="48" viewBox="0 0 48 48">
+          <circle class="timer-track" cx="24" cy="24" r="20"/>
+          <circle class="timer-fill" id="timer-fill" cx="24" cy="24" r="20"
+            stroke-dasharray="125.6" stroke-dashoffset="0"/>
+        </svg>
+        <div class="timer-text" id="timer-text"></div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="dot dot-go"></div> GO — Appuie !</div>
+      <div class="legend-item"><div class="dot dot-nogo"></div> STOP — Ne bouge pas</div>
+    </div>
+
+    <button class="btn btn-go" id="go-btn" onclick="handleResponse()">
+      ⚡ GO !
+    </button>
+  </div>
+
+  <!-- ══ SCREEN: RÉSULTATS ══ -->
+  <div class="screen" id="screen-results">
+    <div class="result-badge" id="result-badge">🏆</div>
+    <div class="game-title" style="font-size:1.8rem; text-align:center;" id="result-title">Partie terminée !</div>
+
+    <div class="stat-grid">
+      <div class="stat-item stat-score">
+        <div class="stat-val" id="res-score">0</div>
+        <div class="stat-lbl">Score total</div>
+      </div>
+      <div class="stat-item stat-rt">
+        <div class="stat-val" id="res-rt">—</div>
+        <div class="stat-lbl">Temps moyen (ms)</div>
+      </div>
+      <div class="stat-item stat-acc">
+        <div class="stat-val" id="res-acc">—</div>
+        <div class="stat-lbl">Précision GO</div>
+      </div>
+      <div class="stat-item stat-inh">
+        <div class="stat-val" id="res-inh">—</div>
+        <div class="stat-lbl">Inhibition STOP</div>
+      </div>
+    </div>
+
+    <div class="perf-msg" id="perf-msg"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="startCountdown()">🔄 Rejouer</button>
+      <button class="btn btn-outline btn-sm" onclick="showScreen('screen-home')">🏠 Menu</button>
+    </div>
+  </div>
+
+</div><!-- /wrapper -->
+
+<script>
+// ════════════════════════════════════════
+//  CONFIG
+// ════════════════════════════════════════
+const DIFFICULTIES = {
+  easy:   { label: 'Facile',   goPct: 0.60, showMs: 1200, maxRt: 1000, trials: 20, iti: [800,1400] },
+  medium: { label: 'Moyen',    goPct: 0.50, showMs: 900,  maxRt: 800,  trials: 25, iti: [600,1200] },
+  hard:   { label: 'Difficile',goPct: 0.40, showMs: 700,  maxRt: 650,  trials: 30, iti: [500,1000] }
+};
+
+const EMOJIS_GO   = ['🚀','⭐','💎','🎯','🏆','🍀','🦋','⚡','🎈','🌟'];
+const EMOJIS_NOGO = ['💀','🛑','❌','🚫','💔','🕷️','👻','☠️','🔥','🌊'];
+
+// ════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════
+let difficulty = 'easy';
+let config = DIFFICULTIES.easy;
+
+let trialList  = [];
+let trialIndex = 0;
+let score      = 0;
+let errors     = 0;
+let combo      = 1;
+let rtList     = [];
+let goHits     = 0, goMisses = 0;
+let nogoCorr   = 0, nogoFails = 0;
+
+let stimulusStart   = 0;
+let currentIsGo     = false;
+let waitingResponse = false;
+let trialTimeout    = null;
+let itiTimeout      = null;
+let timerInterval   = null;
+
+// ════════════════════════════════════════
+//  UI HELPERS
+// ════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function selectDiff(el, diff) {
+  document.querySelectorAll('.diff-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  difficulty = diff;
+  config = DIFFICULTIES[diff];
+}
+
+// ════════════════════════════════════════
+//  KEYBOARD
+// ════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (document.getElementById('screen-game').classList.contains('active')) {
+      handleResponse();
+    }
+  }
+});
+
+// ════════════════════════════════════════
+//  COUNTDOWN
+// ════════════════════════════════════════
+function startCountdown() {
+  resetGame();
+  showScreen('screen-countdown');
+  let n = 3;
+  const el = document.getElementById('countdown-num');
+  el.textContent = n;
+  const iv = setInterval(() => {
+    n--;
+    if (n <= 0) {
+      clearInterval(iv);
+      startGame();
+    } else {
+      el.textContent = n;
+      el.style.animation = 'none';
+      void el.offsetWidth;
+      el.style.animation = 'countPop 0.8s cubic-bezier(0.175,0.885,0.32,1.275)';
+    }
+  }, 900);
+}
+
+// ════════════════════════════════════════
+//  GAME INIT
+// ════════════════════════════════════════
+function resetGame() {
+  config = DIFFICULTIES[difficulty];
+  trialList = buildTrialList(config.trials, config.goPct);
+  trialIndex = 0;
+  score = 0; errors = 0; combo = 1;
+  rtList = []; goHits = 0; goMisses = 0; nogoCorr = 0; nogoFails = 0;
+  waitingResponse = false;
+  clearTimeout(trialTimeout);
+  clearTimeout(itiTimeout);
+  clearInterval(timerInterval);
+}
+
+function buildTrialList(n, goPct) {
+  const list = [];
+  const nGo = Math.round(n * goPct);
+  for (let i = 0; i < nGo; i++) list.push(true);
+  for (let i = nGo; i < n; i++) list.push(false);
+  // shuffle
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  return list;
+}
+
+function startGame() {
+  showScreen('screen-game');
+  const tag = document.getElementById('level-tag');
+  tag.textContent = config.label;
+  tag.className = 'level-tag level-' + difficulty;
+  document.getElementById('trial-total').textContent = config.trials;
+  updateHUD();
+  nextTrial();
+}
+
+// ════════════════════════════════════════
+//  TRIAL LOOP
+// ════════════════════════════════════════
+function nextTrial() {
+  if (trialIndex >= trialList.length) { endGame(); return; }
+
+  waitingResponse = false;
+  clearStimulus();
+
+  const iti = config.iti[0] + Math.random() * (config.iti[1] - config.iti[0]);
+  itiTimeout = setTimeout(() => showStimulus(), iti);
+}
+
+function showStimulus() {
+  currentIsGo = trialList[trialIndex];
+  waitingResponse = true;
+  stimulusStart = performance.now();
+
+  const container = document.getElementById('stimulus-container');
+  const emoji = currentIsGo
+    ? EMOJIS_GO[Math.floor(Math.random() * EMOJIS_GO.length)]
+    : EMOJIS_NOGO[Math.floor(Math.random() * EMOJIS_NOGO.length)];
+
+  container.innerHTML = `
+    <div class="stimulus ${currentIsGo ? 'go-stim' : 'nogo-stim'}">${emoji}</div>
+    <div class="stimulus-label ${currentIsGo ? 'go-label' : 'nogo-label'}">
+      ${currentIsGo ? 'GO !' : 'STOP !'}
+    </div>
+  `;
+
+  updateProgress();
+  startTimerRing();
+
+  // Auto-expire
+  trialTimeout = setTimeout(() => {
+    if (!waitingResponse) return;
+    waitingResponse = false;
+    if (currentIsGo) {
+      // missed GO
+      goMisses++;
+      errors++;
+      combo = 1;
+      showFeedback('too-slow', '⏰ Trop lent !');
+    } else {
+      // correctly ignored STOP
+      nogoCorr++;
+      combo = Math.min(combo + 1, 8);
+      showFeedback('correct', '✅ Bien retenu !');
+    }
+    updateHUD();
+    trialIndex++;
+    stopTimerRing();
+    nextTrial();
+  }, config.showMs + 200);
+}
+
+function handleResponse() {
+  if (!waitingResponse) return;
+  const rt = Math.round(performance.now() - stimulusStart);
+  waitingResponse = false;
+  clearTimeout(trialTimeout);
+  stopTimerRing();
+
+  if (currentIsGo) {
+    // correct GO
+    const pts = calcPoints(rt);
+    score += pts;
+    rtList.push(rt);
+    goHits++;
+    combo = Math.min(combo + 1, 8);
+    document.getElementById('hud-rt').textContent = rt;
+    showFeedback('correct', '✅ +' + pts);
+    if (combo >= 3) spawnComboPop();
+  } else {
+    // wrong — pressed on STOP
+    nogoFails++;
+    errors++;
+    combo = 1;
+    showFeedback('wrong', '❌ STOP !');
+  }
+  updateHUD();
+  trialIndex++;
+  nextTrial();
+}
+
+function calcPoints(rt) {
+  const base = 100;
+  const rtBonus = Math.max(0, Math.round((config.maxRt - rt) / 10));
+  return (base + rtBonus) * combo;
+}
+
+// ════════════════════════════════════════
+//  FEEDBACK
+// ════════════════════════════════════════
+function showFeedback(type, msg) {
+  const fb = document.getElementById('feedback');
+  fb.textContent = msg;
+  fb.className = 'feedback ' + type;
+  void fb.offsetWidth;
+  fb.classList.add('show');
+  setTimeout(() => fb.classList.remove('show'), 600);
+}
+
+function clearStimulus() {
+  const container = document.getElementById('stimulus-container');
+  container.innerHTML = `<div class="ready-msg" id="ready-msg">Attends le signal…</div>`;
+  stopTimerRing();
+}
+
+// ════════════════════════════════════════
+//  TIMER RING
+// ════════════════════════════════════════
+function startTimerRing() {
+  const ring = document.getElementById('timer-ring');
+  const fill = document.getElementById('timer-fill');
+  const txt  = document.getElementById('timer-text');
+  const circ = 125.6;
+  ring.style.display = 'block';
+  const total = config.showMs + 200;
+  const start = performance.now();
+
+  fill.style.stroke = 'var(--accent2)';
+  fill.setAttribute('stroke-dashoffset', '0');
+
+  timerInterval = setInterval(() => {
+    const elapsed = performance.now() - start;
+    const pct = Math.min(elapsed / total, 1);
+    fill.setAttribute('stroke-dashoffset', String(pct * circ));
+    const rem = Math.max(0, Math.ceil((total - elapsed) / 1000));
+    txt.textContent = rem > 0 ? rem : '';
+    if (pct > 0.7) fill.style.stroke = 'var(--nogo-color)';
+    else if (pct > 0.4) fill.style.stroke = 'var(--star)';
+    if (pct >= 1) clearInterval(timerInterval);
+  }, 50);
+}
+
+function stopTimerRing() {
+  clearInterval(timerInterval);
+  document.getElementById('timer-ring').style.display = 'none';
+}
+
+// ════════════════════════════════════════
+//  HUD / PROGRESS
+// ════════════════════════════════════════
+function updateHUD() {
+  document.getElementById('hud-score').textContent  = score;
+  document.getElementById('hud-errors').textContent = errors;
+  document.getElementById('hud-combo').textContent  = 'x' + combo;
+}
+
+function updateProgress() {
+  const pct = (trialIndex / config.trials) * 100;
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('trial-current').textContent = trialIndex + 1;
+}
+
+function spawnComboPop() {
+  const arena = document.getElementById('arena');
+  const el = document.createElement('div');
+  el.className = 'combo-pop';
+  el.textContent = '🔥 Combo x' + combo + ' !';
+  arena.appendChild(el);
+  setTimeout(() => el.remove(), 1000);
+}
+
+// ════════════════════════════════════════
+//  END GAME
+// ════════════════════════════════════════
+function endGame() {
+  clearTimeout(trialTimeout);
+  clearTimeout(itiTimeout);
+  stopTimerRing();
+
+  const avgRt   = rtList.length ? Math.round(rtList.reduce((a,b) => a+b, 0) / rtList.length) : null;
+  const goAcc   = goHits + goMisses > 0 ? Math.round((goHits / (goHits + goMisses)) * 100) : 0;
+  const nogoAcc = nogoCorr + nogoFails > 0 ? Math.round((nogoCorr / (nogoCorr + nogoFails)) * 100) : 0;
+  const overall = Math.round((goAcc + nogoAcc) / 2);
+
+  document.getElementById('res-score').textContent = score;
+  document.getElementById('res-rt').textContent    = avgRt !== null ? avgRt : '—';
+  document.getElementById('res-acc').textContent   = goAcc + '%';
+  document.getElementById('res-inh').textContent   = nogoAcc + '%';
+
+  let badge, title, msg, cls;
+  if (overall >= 90) {
+    badge = '🏆'; title = 'Excellent !';
+    msg = '🌟 Parfait ! Tu contrôles très bien tes réflexes. Continue comme ça !';
+    cls = 'perf-excellent';
+  } else if (overall >= 75) {
+    badge = '🥈'; title = 'Très bien !';
+    msg = '👏 Bon travail ! Tu as de bonnes capacités d\'inhibition.';
+    cls = 'perf-good';
+  } else if (overall >= 55) {
+    badge = '🥉'; title = 'Bien essayé !';
+    msg = '💪 Pas mal ! Encore un peu d\'entraînement et tu seras au top.';
+    cls = 'perf-ok';
+  } else {
+    badge = '🎮'; title = 'Entraîne-toi encore !';
+    msg = '🔄 C\'est difficile au début ! Continue à pratiquer, tu vas progresser.';
+    cls = 'perf-practice';
+  }
+
+  document.getElementById('result-badge').textContent = badge;
+  document.getElementById('result-title').textContent = title;
+  const pm = document.getElementById('perf-msg');
+  pm.textContent = msg;
+  pm.className = 'perf-msg ' + cls;
+
+  showScreen('screen-results');
+}
+</script>
+</body>
+</html>
