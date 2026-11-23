@@ -1,0 +1,9 @@
+[
+ {"slug":"reflexes-controle","name":"Réflexes &amp; Contrôle","function":"Inhibition","pitch":"Appuyer dès que la cible verte apparaît, se retenir devant la rouge. Trois niveaux, de plus en plus rapides.","paradigm":"Inspiré du paradigme Go/No-Go."},
+ {"slug":"fee-jardins","name":"La Fée des Deux Jardins","function":"Attention divisée","pitch":"Compter les bulles d'un jardin tout en arrêtant les intrus de l'autre : deux tâches à mener en même temps.","paradigm":"Inspiré des paradigmes de double tâche."},
+ {"slug":"station-mnemos","name":"Station Mnémos","function":"Mémoire de travail","pitch":"Quatre épreuves : reproduire une séquence, retrouver des symboles, repérer une répétition à N étapes, retenir un code.","paradigm":"Inspiré des empans, du N-back et des tâches de mise à jour."},
+ {"slug":"donjon-des-regles","name":"Le Donjon des Règles","function":"Flexibilité cognitive","pitch":"Traverser un labyrinthe dont les règles de déplacement changent en cours de route.","paradigm":"Inspiré des tâches de changement de règle."},
+ {"slug":"oreille-musicale","name":"L'Oreille Musicale","function":"Attention auditive","pitch":"Compter les sons d'un instrument, puis de deux instruments qui jouent en alternance.","paradigm":"Inspiré des tâches de comptage auditif."},
+ {"slug":"ma-journee","name":"Ma Journée","function":"Planification","pitch":"Organiser une journée sous contraintes, remettre des étapes dans l'ordre, anticiper les conséquences de ses choix.","paradigm":"Inspiré des tâches de planification et de séquençage."},
+ {"slug":"hermine-psy","name":"Hermine ψ","function":"Vitesse de traitement","pitch":"Identifier, classer et trier des animaux le plus vite possible, au milieu de distracteurs.","paradigm":"Inspiré des tâches de vitesse de traitement."}
+]

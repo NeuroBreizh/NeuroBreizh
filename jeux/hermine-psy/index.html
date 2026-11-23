@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermine ψ — Vitesse de Traitement</title>
+<link rel="stylesheet" href="../../assets/fonts/hermine-psy.css">
+<style>
+:root {
+  --bg:     #f0ebe3;
+  --bg2:    #e8e0d4;
+  --card:   #fffdf8;
+  --forest: #2d5a27;
+  --moss:   #4a7c3f;
+  --bark:   #7a5c3a;
+  --cream:  #f5f0e8;
+  --snow:   #ffffff;
+  --psy:    #7c3aed;
+  --psy2:   #a78bfa;
+  --sun:    #f59e0b;
+  --red:    #dc2626;
+  --green:  #16a34a;
+  --text:   #1c1208;
+  --muted:  #8a7a6a;
+  --r:      18px;
+  --shadow: 0 4px 20px rgba(0,0,0,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  background:var(--bg);
+  font-family:'Nunito',sans-serif;
+  color:var(--text);
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;
+  padding:14px;
+  overflow-x:hidden;
+}
+
+/* meadow texture */
+body::before{
+  content:'';position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 100%, rgba(45,90,39,.08) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 30% at 20% 90%,  rgba(74,124,63,.06) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 25% at 80% 95%,  rgba(45,90,39,.05) 0%, transparent 50%);
+  pointer-events:none;z-index:0;
+}
+
+.wrapper{position:relative;z-index:1;width:100%;max-width:640px;display:flex;flex-direction:column;align-items:center;gap:14px;}
+
+/* ── SCREENS ── */
+.screen{display:none;flex-direction:column;align-items:center;gap:14px;width:100%;}
+.screen.active{display:flex;}
+
+/* ── TITLES ── */
+.game-title{
+  font-family:'Baloo 2',cursive;font-weight:800;
+  font-size:clamp(1.8rem,6vw,2.8rem);text-align:center;
+  color:var(--forest);letter-spacing:1px;
+  text-shadow:0 2px 0 rgba(45,90,39,.15);
+}
+.sub-title{font-family:'Baloo 2',cursive;font-weight:700;font-size:1.2rem;color:var(--moss);text-align:center;}
+.subtitle{font-size:.88rem;color:var(--muted);text-align:center;font-style:italic;}
+
+/* ── CARD ── */
+.card{
+  background:var(--card);
+  border-radius:var(--r);
+  padding:20px 22px;
+  width:100%;
+  box-shadow:var(--shadow);
+  border:1.5px solid rgba(122,92,58,.12);
+}
+
+/* ── HERMINE SVG ── */
+.hermine-wrap{display:flex;justify-content:center;}
+#hermine-svg{filter:drop-shadow(0 4px 12px rgba(0,0,0,.15));}
+
+/* ── GAME MODE CARDS ── */
+.mode-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;width:100%;}
+.mode-card{
+  background:var(--card);border:2px solid rgba(122,92,58,.15);border-radius:14px;
+  padding:14px 8px;cursor:pointer;text-align:center;transition:all .2s;
+}
+.mode-card:hover{border-color:var(--moss);transform:translateY(-2px);box-shadow:0 6px 18px rgba(45,90,39,.15);}
+.mode-card.selected{border-color:var(--psy);background:rgba(124,58,237,.06);}
+.mode-icon{font-size:1.8rem;display:block;margin-bottom:5px;}
+.mode-name{font-family:'Baloo 2',cursive;font-weight:700;font-size:.78rem;color:var(--forest);}
+.mode-desc{font-size:.65rem;color:var(--muted);margin-top:3px;line-height:1.3;}
+
+/* ── DIFFICULTY ── */
+.diff-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%;}
+@media(max-width:400px){.diff-grid{grid-template-columns:repeat(2,1fr);}}
+.diff-card{
+  background:var(--cream);border:2px solid rgba(122,92,58,.15);border-radius:12px;
+  padding:10px 6px;cursor:pointer;text-align:center;transition:all .2s;
+}
+.diff-card:hover{border-color:var(--moss);}
+.diff-card.selected{border-color:var(--psy);background:rgba(124,58,237,.06);}
+.diff-icon{font-size:1.4rem;display:block;margin-bottom:3px;}
+.diff-name{font-family:'Baloo 2',cursive;font-weight:700;font-size:.7rem;color:var(--forest);}
+.diff-sub{font-size:.6rem;color:var(--muted);margin-top:2px;}
+
+/* ── HUD ── */
+.hud{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%;}
+.hud3{grid-template-columns:repeat(3,1fr);}
+.hud-box{background:var(--card);border-radius:12px;padding:8px 6px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);border:1.5px solid rgba(122,92,58,.1);}
+.hud-val{font-family:'Baloo 2',cursive;font-weight:800;font-size:1.3rem;line-height:1;}
+.hud-lbl{font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:2px;}
+.hud-score .hud-val{color:var(--psy);}
+.hud-timer .hud-val{color:var(--sun);}
+.hud-streak .hud-val{color:var(--green);}
+.hud-lives .hud-val{color:var(--red);}
+
+/* ── PROGRESS ── */
+.prog-wrap{width:100%;height:10px;background:var(--bg2);border-radius:20px;overflow:hidden;}
+.prog-bar{height:100%;background:linear-gradient(90deg,var(--moss),var(--psy));border-radius:20px;transition:width .2s;}
+
+/* ── TIMER BAR ── */
+.timer-wrap{width:100%;height:8px;background:var(--bg2);border-radius:20px;overflow:hidden;}
+.timer-bar{height:100%;border-radius:20px;transition:background .5s;}
+
+/* ── ARENA ── */
+.arena{
+  width:100%;min-height:240px;
+  background:var(--card);border-radius:var(--r);
+  box-shadow:var(--shadow);border:1.5px solid rgba(122,92,58,.12);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:18px;gap:14px;position:relative;overflow:hidden;
+}
+.arena-label{
+  font-family:'Baloo 2',cursive;font-weight:700;font-size:.75rem;
+  color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;
+  position:absolute;top:12px;left:16px;
+}
+
+/* feedback flash */
+.arena.flash-ok{animation:flashOk .35s ease-out;}
+.arena.flash-ko{animation:flashKo .35s ease-out;}
+@keyframes flashOk{0%{background:#dcfce7;}100%{background:var(--card);}}
+@keyframes flashKo{0%{background:#fee2e2;}100%{background:var(--card);}}
+
+/* ── STIMULUS TARGET ── */
+.stim-target{
+  font-size:clamp(3rem,12vw,5rem);
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  animation:popIn .25s cubic-bezier(.175,.885,.32,1.275);
+}
+@keyframes popIn{0%{transform:scale(.4);opacity:0;}100%{transform:scale(1);opacity:1;}}
+.stim-label{font-family:'Baloo 2',cursive;font-weight:700;font-size:.8rem;color:var(--muted);letter-spacing:1px;}
+
+/* ── ANSWER BUTTONS ── */
+.ans-grid{display:grid;gap:10px;width:100%;}
+.ans-grid-2{grid-template-columns:1fr 1fr;}
+.ans-grid-3{grid-template-columns:1fr 1fr 1fr;}
+.ans-grid-4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;}
+.ans-btn{
+  padding:14px 8px;border-radius:14px;border:2.5px solid rgba(122,92,58,.15);
+  background:var(--card);
+  font-family:'Baloo 2',cursive;font-weight:700;font-size:1rem;
+  cursor:pointer;transition:all .12s;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  box-shadow:0 2px 8px rgba(0,0,0,.07);
+  user-select:none;
+}
+.ans-btn:hover{border-color:var(--moss);transform:translateY(-1px);box-shadow:0 4px 14px rgba(45,90,39,.15);}
+.ans-btn:active{transform:scale(.96);}
+.ans-btn.correct{background:#dcfce7;border-color:var(--green);}
+.ans-btn.wrong{background:#fee2e2;border-color:var(--red);}
+.ans-btn .ans-emoji{font-size:1.8rem;}
+.ans-btn .ans-text{font-size:.72rem;color:var(--muted);}
+
+/* ── SORT GAME ── */
+.sort-arena{display:flex;flex-direction:column;gap:12px;width:100%;}
+.sort-item{
+  display:flex;align-items:center;gap:14px;padding:12px 16px;
+  background:var(--cream);border-radius:14px;border:2px solid rgba(122,92,58,.12);
+  cursor:grab;transition:all .15s;
+  font-family:'Baloo 2',cursive;font-weight:700;font-size:1rem;
+}
+.sort-item:hover{border-color:var(--moss);box-shadow:0 4px 12px rgba(0,0,0,.1);}
+.sort-item.dragging{opacity:.5;transform:scale(.97);}
+.sort-item.sort-correct{background:#dcfce7;border-color:var(--green);}
+.sort-item.sort-wrong{background:#fee2e2;border-color:var(--red);}
+.sort-item .sort-emoji{font-size:1.8rem;flex-shrink:0;}
+.sort-buckets{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;}
+.sort-bucket{
+  min-height:80px;border-radius:14px;border:2.5px dashed;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  padding:10px;transition:all .2s;
+  font-family:'Baloo 2',cursive;font-weight:700;font-size:.85rem;
+}
+.sort-bucket.over{transform:scale(1.02);}
+.sort-bucket-0{border-color:rgba(22,163,74,.4);background:rgba(22,163,74,.05);color:var(--green);}
+.sort-bucket-1{border-color:rgba(220,38,38,.4);background:rgba(220,38,38,.05);color:var(--red);}
+.sort-bucket-2{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.05);color:var(--sun);}
+.sort-bucket-3{border-color:rgba(124,58,237,.4);background:rgba(124,58,237,.05);color:var(--psy);}
+.sort-bucket .bucket-icon{font-size:1.6rem;}
+
+/* ── BUTTONS ── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:12px 26px;border-radius:50px;border:none;
+  font-family:'Baloo 2',cursive;font-weight:800;font-size:1rem;
+  cursor:pointer;transition:transform .15s,box-shadow .15s;
+}
+.btn:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.15);}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:linear-gradient(135deg,var(--moss),var(--forest));color:#fff;box-shadow:0 4px 14px rgba(45,90,39,.3);}
+.btn-psy{background:linear-gradient(135deg,var(--psy2),var(--psy));color:#fff;box-shadow:0 4px 14px rgba(124,58,237,.3);}
+.btn-outline{background:transparent;border:2.5px solid var(--moss);color:var(--moss);}
+.btn-sm{padding:9px 20px;font-size:.85rem;}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+
+/* ── COUNTDOWN ── */
+.cdown{font-family:'Baloo 2',cursive;font-weight:800;font-size:5.5rem;color:var(--forest);animation:cPop .7s cubic-bezier(.175,.885,.32,1.275);text-shadow:0 3px 0 rgba(45,90,39,.2);}
+@keyframes cPop{0%{transform:scale(2);opacity:0;}100%{transform:scale(1);opacity:1;}}
+
+/* ── RESULTS ── */
+.res-badge{font-size:4rem;text-align:center;animation:popIn .5s cubic-bezier(.175,.885,.32,1.275);}
+.res-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;}
+.res-item{background:var(--card);border-radius:12px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.res-val{font-family:'Baloo 2',cursive;font-weight:800;font-size:1.6rem;}
+.res-lbl{font-size:.68rem;color:var(--muted);margin-top:2px;}
+.perf-msg{font-size:.9rem;font-weight:700;text-align:center;padding:13px 18px;border-radius:12px;width:100%;}
+.perf-s{background:rgba(22,163,74,.1);color:var(--green);border:1.5px solid rgba(22,163,74,.3);}
+.perf-a{background:rgba(124,58,237,.1);color:var(--psy);border:1.5px solid rgba(124,58,237,.3);}
+.perf-b{background:rgba(245,158,11,.1);color:var(--sun);border:1.5px solid rgba(245,158,11,.3);}
+.perf-c{background:rgba(220,38,38,.1);color:var(--red);border:1.5px solid rgba(220,38,38,.3);}
+
+/* ── QUIT MODAL ── */
+#quit-modal{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:none;align-items:center;justify-content:center;}
+#quit-modal.open{display:flex;}
+.quit-box{background:var(--card);border-radius:20px;padding:28px 28px;text-align:center;max-width:290px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,.2);}
+.quit-box p{font-family:'Baloo 2',cursive;font-weight:700;font-size:1rem;color:var(--text);margin-bottom:18px;line-height:1.5;}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);padding:9px 22px;border-radius:50px;font-family:'Baloo 2',cursive;font-weight:700;font-size:.85rem;box-shadow:0 4px 16px rgba(0,0,0,.15);opacity:0;transition:opacity .25s;pointer-events:none;z-index:200;white-space:nowrap;}
+#toast.show{opacity:1;}
+#toast.ok{background:#dcfce7;border:1.5px solid var(--green);color:var(--green);}
+#toast.ko{background:#fee2e2;border:1.5px solid var(--red);color:var(--red);}
+#toast.info{background:rgba(124,58,237,.1);border:1.5px solid var(--psy);color:var(--psy);}
+
+/* RT display */
+.rt-display{font-family:'Baloo 2',cursive;font-weight:700;font-size:.8rem;color:var(--muted);text-align:center;}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<div id="quit-modal">
+  <div class="quit-box">
+    <p>🐾 Quitter cette partie ?<br><span style="color:var(--muted);font-size:.85rem;">Ta progression sera perdue.</span></p>
+    <div class="btn-row">
+      <button class="btn btn-sm" style="background:var(--red);color:#fff;" onclick="doQuit()">Quitter</button>
+      <button class="btn btn-outline btn-sm" onclick="closeQuit()">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrapper">
+
+<!-- ══ HOME ══ -->
+<div class="screen active" id="s-home">
+  <div class="hermine-wrap">
+    <svg id="hermine-svg" width="130" height="160" viewBox="0 0 130 160" xmlns="http://www.w3.org/2000/svg">
+      <!-- tail -->
+      <ellipse cx="18" cy="138" rx="14" ry="7" fill="#e8e0d4" transform="rotate(-20,18,138)"/>
+      <ellipse cx="10" cy="148" rx="7" ry="4" fill="#1c1208" transform="rotate(-30,10,148)"/>
+      <!-- body -->
+      <ellipse cx="65" cy="115" rx="34" ry="38" fill="#f5f0e8"/>
+      <ellipse cx="65" cy="115" rx="34" ry="38" fill="none" stroke="#d4c9b8" stroke-width="1"/>
+      <!-- belly -->
+      <ellipse cx="65" cy="120" rx="22" ry="26" fill="#fffdf8"/>
+      <!-- ψ symbol on chest -->
+      <text x="65" y="122" text-anchor="middle" font-size="22" font-weight="900" fill="#7c3aed" font-family="serif" letter-spacing="0">ψ</text>
+      <!-- arms -->
+      <ellipse cx="32" cy="108" rx="9" ry="20" fill="#f5f0e8" transform="rotate(15,32,108)"/>
+      <ellipse cx="98" cy="108" rx="9" ry="20" fill="#f5f0e8" transform="rotate(-15,98,108)"/>
+      <!-- paws -->
+      <ellipse cx="28" cy="124" rx="8" ry="5" fill="#e8e0d4"/>
+      <ellipse cx="102" cy="124" rx="8" ry="5" fill="#e8e0d4"/>
+      <!-- head -->
+      <ellipse cx="65" cy="72" rx="30" ry="28" fill="#f5f0e8"/>
+      <ellipse cx="65" cy="72" rx="30" ry="28" fill="none" stroke="#d4c9b8" stroke-width="1"/>
+      <!-- ears -->
+      <ellipse cx="42" cy="50" rx="9" ry="12" fill="#f5f0e8" transform="rotate(-10,42,50)"/>
+      <ellipse cx="42" cy="50" rx="5" ry="7"  fill="#f0c0c0" transform="rotate(-10,42,50)"/>
+      <ellipse cx="88" cy="50" rx="9" ry="12" fill="#f5f0e8" transform="rotate(10,88,50)"/>
+      <ellipse cx="88" cy="50" rx="5" ry="7"  fill="#f0c0c0" transform="rotate(10,88,50)"/>
+      <!-- face mask (darker) -->
+      <ellipse cx="65" cy="78" rx="22" ry="16" fill="#fffdf8"/>
+      <!-- eyes -->
+      <circle cx="55" cy="68" r="5" fill="#1c1208"/>
+      <circle cx="75" cy="68" r="5" fill="#1c1208"/>
+      <circle cx="56.5" cy="66.5" r="1.8" fill="white"/>
+      <circle cx="76.5" cy="66.5" r="1.8" fill="white"/>
+      <!-- nose -->
+      <ellipse cx="65" cy="77" rx="4" ry="3" fill="#e8a0a0"/>
+      <!-- whiskers -->
+      <line x1="35" y1="76" x2="58" y2="78" stroke="#8a7a6a" stroke-width="1" stroke-linecap="round"/>
+      <line x1="35" y1="80" x2="58" y2="80" stroke="#8a7a6a" stroke-width="1" stroke-linecap="round"/>
+      <line x1="95" y1="76" x2="72" y2="78" stroke="#8a7a6a" stroke-width="1" stroke-linecap="round"/>
+      <line x1="95" y1="80" x2="72" y2="80" stroke="#8a7a6a" stroke-width="1" stroke-linecap="round"/>
+      <!-- mouth -->
+      <path d="M60 82 Q65 87 70 82" stroke="#8a7a6a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <!-- feet -->
+      <ellipse cx="50" cy="150" rx="12" ry="7" fill="#e8e0d4"/>
+      <ellipse cx="80" cy="150" rx="12" ry="7" fill="#e8e0d4"/>
+    </svg>
+  </div>
+
+  <div class="game-title">Hermine ψ</div>
+  <div class="subtitle">Entraînement à la vitesse de traitement</div>
+
+  <div class="mode-grid">
+    <div class="mode-card selected" id="mc-find" onclick="selectMode('find',this)">
+      <span class="mode-icon">🎯</span>
+      <div class="mode-name">Identifier</div>
+      <div class="mode-desc">Trouve la bonne réponse parmi les distracteurs</div>
+    </div>
+    <div class="mode-card" id="mc-react" onclick="selectMode('react',this)">
+      <span class="mode-icon">⚡</span>
+      <div class="mode-name">Catégoriser</div>
+      <div class="mode-desc">Réagis selon la catégorie de l'animal</div>
+    </div>
+    <div class="mode-card" id="mc-sort" onclick="selectMode('sort',this)">
+      <span class="mode-icon">🗂️</span>
+      <div class="mode-name">Trier</div>
+      <div class="mode-desc">Classe les animaux dans les bonnes cases</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="font-size:.8rem;color:var(--muted);margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Difficulté</div>
+    <div class="diff-grid">
+      <div class="diff-card selected" onclick="selectDiff(this,'easy')">
+        <span class="diff-icon">🌿</span>
+        <div class="diff-name">Facile</div>
+        <div class="diff-sub">Lent, peu de distracteurs</div>
+      </div>
+      <div class="diff-card" onclick="selectDiff(this,'medium')">
+        <span class="diff-icon">🌲</span>
+        <div class="diff-name">Moyen</div>
+        <div class="diff-sub">Rythme normal</div>
+      </div>
+      <div class="diff-card" onclick="selectDiff(this,'hard')">
+        <span class="diff-icon">🦊</span>
+        <div class="diff-name">Difficile</div>
+        <div class="diff-sub">Rapide, piégeux</div>
+      </div>
+      <div class="diff-card" onclick="selectDiff(this,'endless')">
+        <span class="diff-icon">♾️</span>
+        <div class="diff-name">Infini</div>
+        <div class="diff-sub">3 erreurs = fin</div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn btn-psy" onclick="launchGame()">🐾 Lancer l'entraînement !</button>
+</div>
+
+<!-- ══ COUNTDOWN ══ -->
+<div class="screen" id="s-countdown">
+  <svg width="80" height="100" viewBox="0 0 130 160">
+    <ellipse cx="65" cy="115" rx="34" ry="38" fill="#f5f0e8"/>
+    <ellipse cx="65" cy="120" rx="22" ry="26" fill="#fffdf8"/>
+    <text x="65" y="122" text-anchor="middle" font-size="22" font-weight="900" fill="#7c3aed" font-family="serif">ψ</text>
+    <ellipse cx="65" cy="72" rx="30" ry="28" fill="#f5f0e8"/>
+    <circle cx="55" cy="68" r="5" fill="#1c1208"/>
+    <circle cx="75" cy="68" r="5" fill="#1c1208"/>
+    <circle cx="56.5" cy="66.5" r="1.8" fill="white"/>
+    <circle cx="76.5" cy="66.5" r="1.8" fill="white"/>
+    <ellipse cx="65" cy="77" rx="4" ry="3" fill="#e8a0a0"/>
+    <ellipse cx="42" cy="50" rx="9" ry="12" fill="#f5f0e8" transform="rotate(-10,42,50)"/>
+    <ellipse cx="88" cy="50" rx="9" ry="12" fill="#f5f0e8" transform="rotate(10,88,50)"/>
+  </svg>
+  <div class="cdown" id="cd-num">3</div>
+  <div class="subtitle" id="cd-msg">Prépare-toi !</div>
+</div>
+
+<!-- ══ GAME FIND ══ -->
+<div class="screen" id="s-find">
+  <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+    <div class="sub-title" style="font-size:.95rem;">🎯 Identifier</div>
+    <div style="font-size:.72rem;color:var(--muted);" id="find-diff-label"></div>
+  </div>
+  <div class="hud">
+    <div class="hud-box hud-score"><div class="hud-val" id="find-score">0</div><div class="hud-lbl">Score</div></div>
+    <div class="hud-box hud-timer"><div class="hud-val" id="find-rt">—</div><div class="hud-lbl">Réaction ms</div></div>
+    <div class="hud-box hud-streak"><div class="hud-val" id="find-streak">0</div><div class="hud-lbl">Série</div></div>
+    <div class="hud-box hud-lives"><div class="hud-val" id="find-lives">❤❤❤</div><div class="hud-lbl">Vies</div></div>
+  </div>
+  <div class="prog-wrap"><div class="prog-bar" id="find-prog" style="width:0%"></div></div>
+  <div class="timer-wrap"><div class="timer-bar" id="find-timer" style="width:100%;background:var(--green)"></div></div>
+  <div class="arena" id="find-arena">
+    <div class="arena-label">TROUVE LA BONNE COULEUR</div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+      <div id="find-target-box" style="font-size:4rem;width:90px;height:90px;border-radius:16px;display:flex;align-items:center;justify-content:center;transition:background .2s;"></div>
+      <div class="stim-label" id="find-target-label" style="font-size:.75rem;"></div>
+    </div>
+  </div>
+  <div id="find-choices" style="display:grid;gap:10px;width:100%;"></div>
+  <button class="btn btn-outline btn-sm" onclick="openQuit()">← Quitter</button>
+</div>
+
+<!-- ══ GAME REACT ══ -->
+<div class="screen" id="s-react">
+  <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+    <div class="sub-title" style="font-size:.95rem;">⚡ Catégoriser</div>
+    <div style="font-size:.72rem;color:var(--muted);" id="react-diff-label"></div>
+  </div>
+  <div class="hud">
+    <div class="hud-box hud-score"><div class="hud-val" id="react-score">0</div><div class="hud-lbl">Score</div></div>
+    <div class="hud-box hud-timer"><div class="hud-val" id="react-rt">—</div><div class="hud-lbl">Réaction ms</div></div>
+    <div class="hud-box hud-streak"><div class="hud-val" id="react-streak">0</div><div class="hud-lbl">Série</div></div>
+    <div class="hud-box hud-lives"><div class="hud-val" id="react-lives">❤❤❤</div><div class="hud-lbl">Vies</div></div>
+  </div>
+  <div class="prog-wrap"><div class="prog-bar" id="react-prog" style="width:0%"></div></div>
+  <div class="timer-wrap"><div class="timer-bar" id="react-timer" style="width:100%;background:var(--green)"></div></div>
+  <div class="arena" id="react-arena">
+    <div class="arena-label" id="react-rule-label">MAMMIFÈRE ou OISEAU ?</div>
+    <div class="stim-target" id="react-stim">🦊</div>
+    <div class="stim-label" id="react-stim-name">Renard</div>
+  </div>
+  <div class="ans-grid ans-grid-2" id="react-choices"></div>
+  <button class="btn btn-outline btn-sm" onclick="openQuit()">← Quitter</button>
+</div>
+
+<!-- ══ GAME SORT ══ -->
+<div class="screen" id="s-sort">
+  <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+    <div class="sub-title" style="font-size:.95rem;">🗂️ Trier</div>
+    <div style="font-size:.72rem;color:var(--muted);" id="sort-diff-label"></div>
+  </div>
+  <div class="hud hud3">
+    <div class="hud-box hud-score"><div class="hud-val" id="sort-score">0</div><div class="hud-lbl">Score</div></div>
+    <div class="hud-box hud-streak"><div class="hud-val" id="sort-streak">0</div><div class="hud-lbl">Série</div></div>
+    <div class="hud-box hud-lives"><div class="hud-val" id="sort-lives">❤❤❤</div><div class="hud-lbl">Vies</div></div>
+  </div>
+  <div class="prog-wrap"><div class="prog-bar" id="sort-prog" style="width:0%"></div></div>
+  <div class="timer-wrap"><div class="timer-bar" id="sort-timer" style="width:100%;background:var(--green)"></div></div>
+  <div class="arena" id="sort-arena">
+    <div class="arena-label" id="sort-rule">TRIE LES ANIMAUX</div>
+    <!-- Progress indicator -->
+    <div id="sort-progress-label" style="font-family:'Baloo 2',cursive;font-size:.75rem;color:var(--muted);">Animal 1 / 4</div>
+    <!-- Current animal to sort -->
+    <div class="stim-target" id="sort-current-animal" style="font-size:4rem;">🦊</div>
+    <div style="font-family:'Baloo 2',cursive;font-weight:700;font-size:.9rem;color:var(--text);" id="sort-current-name">Renard</div>
+    <!-- Already sorted items (mini display) -->
+    <div id="sort-done-list" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;min-height:32px;"></div>
+  </div>
+  <!-- Category buttons — always visible below arena -->
+  <div class="ans-grid ans-grid-2" id="sort-cat-buttons"></div>
+  <button class="btn btn-outline btn-sm" onclick="openQuit()">← Quitter</button>
+</div>
+
+<!-- ══ RESULTS ══ -->
+<div class="screen" id="s-results">
+  <div class="res-badge" id="res-badge">🏆</div>
+  <div class="game-title" style="font-size:1.6rem;" id="res-title">Bravo !</div>
+  <div class="res-grid">
+    <div class="res-item"><div class="res-val" id="res-score" style="color:var(--psy)">0</div><div class="res-lbl">⭐ Score</div></div>
+    <div class="res-item"><div class="res-val" id="res-rt" style="color:var(--sun)">—</div><div class="res-lbl">⚡ Temps moy. (ms)</div></div>
+    <div class="res-item"><div class="res-val" id="res-acc" style="color:var(--green)">—</div><div class="res-lbl">✅ Précision</div></div>
+    <div class="res-item"><div class="res-val" id="res-best" style="color:var(--bark)">0</div><div class="res-lbl">🔥 Meilleure série</div></div>
+  </div>
+  <div class="perf-msg" id="res-perf"></div>
+  <div class="btn-row">
+    <button class="btn btn-psy" onclick="replayGame()">↺ Rejouer</button>
+    <button class="btn btn-outline btn-sm" onclick="showScreen('s-home')">🏠 Menu</button>
+  </div>
+</div>
+
+</div><!-- /wrapper -->
+<script>
+'use strict';
+// ══════════════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════════════
+const ANIMALS = [
+  // Mammifères sauvages
+  {e:'🦊',n:'Renard',    cat:'mammifère', sub:'sauvage',  size:'petit'},
+  {e:'🐺',n:'Loup',      cat:'mammifère', sub:'sauvage',  size:'grand'},
+  {e:'🦌',n:'Cerf',      cat:'mammifère', sub:'sauvage',  size:'grand'},
+  {e:'🐗',n:'Sanglier',  cat:'mammifère', sub:'sauvage',  size:'grand'},
+  {e:'🦔',n:'Hérisson',  cat:'mammifère', sub:'sauvage',  size:'petit'},
+  {e:'🐇',n:'Lapin',     cat:'mammifère', sub:'sauvage',  size:'petit'},
+  {e:'🦦',n:'Loutre',    cat:'mammifère', sub:'sauvage',  size:'petit'},
+  {e:'🐻',n:'Ours',      cat:'mammifère', sub:'sauvage',  size:'grand'},
+  {e:'🦝',n:'Raton',     cat:'mammifère', sub:'sauvage',  size:'petit'},
+  {e:'🐿',n:'Écureuil',  cat:'mammifère', sub:'sauvage',  size:'petit'},
+  // Oiseaux
+  {e:'🦅',n:'Aigle',     cat:'oiseau',    sub:'sauvage',  size:'grand'},
+  {e:'🦉',n:'Hibou',     cat:'oiseau',    sub:'sauvage',  size:'petit'},
+  {e:'🐦',n:'Moineau',   cat:'oiseau',    sub:'sauvage',  size:'petit'},
+  {e:'🦜',n:'Perroquet', cat:'oiseau',    sub:'sauvage',  size:'petit'},
+  {e:'🦩',n:'Flamant',   cat:'oiseau',    sub:'sauvage',  size:'grand'},
+  {e:'🦆',n:'Canard',    cat:'oiseau',    sub:'sauvage',  size:'petit'},
+  {e:'🦚',n:'Paon',      cat:'oiseau',    sub:'sauvage',  size:'grand'},
+  {e:'🐧',n:'Pingouin',  cat:'oiseau',    sub:'sauvage',  size:'petit'},
+  // Animaux marins — confusion avec mammifères !
+  {e:'🐬',n:'Dauphin',   cat:'marin',     sub:'sauvage',  size:'grand'},
+  {e:'🐙',n:'Pieuvre',   cat:'marin',     sub:'sauvage',  size:'petit'},
+  {e:'🦈',n:'Requin',    cat:'marin',     sub:'sauvage',  size:'grand'},
+  {e:'🐠',n:'Poisson',   cat:'marin',     sub:'sauvage',  size:'petit'},
+  {e:'🦭',n:'Phoque',    cat:'marin',     sub:'sauvage',  size:'grand'},
+  // Animaux de ferme
+  {e:'🐄',n:'Vache',     cat:'ferme',     sub:'domestique',size:'grand'},
+  {e:'🐑',n:'Mouton',    cat:'ferme',     sub:'domestique',size:'petit'},
+  {e:'🐖',n:'Cochon',    cat:'ferme',     sub:'domestique',size:'petit'},
+  {e:'🐔',n:'Poule',     cat:'ferme',     sub:'domestique',size:'petit'},
+  {e:'🐴',n:'Cheval',    cat:'ferme',     sub:'domestique',size:'grand'},
+  // Animaux domestiques
+  {e:'🐶',n:'Chien',     cat:'domestique',sub:'domestique',size:'petit'},
+  {e:'🐱',n:'Chat',      cat:'domestique',sub:'domestique',size:'petit'},
+  {e:'🐹',n:'Hamster',   cat:'domestique',sub:'domestique',size:'petit'},
+  // Insectes / petits
+  {e:'🦋',n:'Papillon',  cat:'insecte',   sub:'sauvage',  size:'petit'},
+  {e:'🐝',n:'Abeille',   cat:'insecte',   sub:'sauvage',  size:'petit'},
+  {e:'🐛',n:'Chenille',  cat:'insecte',   sub:'sauvage',  size:'petit'},
+  {e:'🦗',n:'Grillon',   cat:'insecte',   sub:'sauvage',  size:'petit'},
+  // Reptiles
+  {e:'🦎',n:'Lézard',    cat:'reptile',   sub:'sauvage',  size:'petit'},
+  {e:'🐢',n:'Tortue',    cat:'reptile',   sub:'sauvage',  size:'petit'},
+  {e:'🐊',n:'Crocodile', cat:'reptile',   sub:'sauvage',  size:'grand'},
+  // Amphibiens
+  {e:'🐸',n:'Grenouille',cat:'reptile',   sub:'sauvage',  size:'petit'},
+  // Plus d'oiseaux — pièges aquatiques/vol
+  {e:'🦢',n:'Cygne',     cat:'oiseau',    sub:'sauvage',  size:'grand'},
+  {e:'🐓',n:'Coq',       cat:'oiseau',    sub:'domestique',size:'petit'},
+  {e:'🦤',n:'Dodo',      cat:'oiseau',    sub:'sauvage',  size:'petit'},
+  {e:'🦃',n:'Dinde',     cat:'ferme',     sub:'domestique',size:'grand'},
+  // Plus de mammifères — pièges taille/habitat
+  {e:'🐭',n:'Souris',    cat:'mammifère', sub:'sauvage',  size:'petit'},
+  {e:'🦡',n:'Blaireau',  cat:'mammifère', sub:'sauvage',  size:'petit'},
+  {e:'🐏',n:'Bélier',    cat:'ferme',     sub:'domestique',size:'grand'},
+  {e:'🦙',n:'Lama',      cat:'ferme',     sub:'domestique',size:'grand'},
+  {e:'🐪',n:'Chameau',   cat:'mammifère', sub:'sauvage',  size:'grand'},
+  {e:'🦏',n:'Rhinocéros',cat:'mammifère', sub:'sauvage',  size:'grand'},
+  {e:'🦛',n:'Hippopotame',cat:'mammifère',sub:'sauvage',  size:'grand'},
+  {e:'🦒',n:'Girafe',    cat:'mammifère', sub:'sauvage',  size:'grand'},
+  {e:'🐘',n:'Éléphant',  cat:'mammifère', sub:'sauvage',  size:'grand'},
+  {e:'🦁',n:'Lion',      cat:'mammifère', sub:'sauvage',  size:'grand'},
+  {e:'🐯',n:'Tigre',     cat:'mammifère', sub:'sauvage',  size:'grand'},
+  {e:'🐻‍❄️',n:'Ours polaire',cat:'mammifère',sub:'sauvage',size:'grand'},
+  {e:'🦥',n:'Paresseux', cat:'mammifère', sub:'sauvage',  size:'petit'},
+  {e:'🦘',n:'Kangourou', cat:'mammifère', sub:'sauvage',  size:'grand'},
+  {e:'🐨',n:'Koala',     cat:'mammifère', sub:'sauvage',  size:'petit'},
+  {e:'🐼',n:'Panda',     cat:'mammifère', sub:'sauvage',  size:'grand'},
+  {e:'🐺',n:'Loup',      cat:'mammifère', sub:'sauvage',  size:'grand'},
+  {e:'🦊',n:'Renard',    cat:'mammifère', sub:'sauvage',  size:'petit'},
+  // Plus d'insectes
+  {e:'🐞',n:'Coccinelle',cat:'insecte',   sub:'sauvage',  size:'petit'},
+  {e:'🦟',n:'Moustique', cat:'insecte',   sub:'sauvage',  size:'petit'},
+  {e:'🕷️',n:'Araignée',  cat:'insecte',   sub:'sauvage',  size:'petit'},
+  // Plus de marins — pièges mammifères marins
+  {e:'🐳',n:'Baleine',   cat:'marin',     sub:'sauvage',  size:'grand'},
+  {e:'🦑',n:'Calmar',    cat:'marin',     sub:'sauvage',  size:'petit'},
+  {e:'🦞',n:'Homard',    cat:'marin',     sub:'sauvage',  size:'petit'},
+  {e:'🐡',n:'Poisson-globe',cat:'marin',  sub:'sauvage',  size:'petit'},
+  {e:'🦀',n:'Crabe',     cat:'marin',     sub:'sauvage',  size:'petit'},
+];
+
+// Category rules for react game — max 3 rules, all animals usable, tricky cases highlighted
+const REACT_RULES = [
+  // Rule 1: Vol ou pas ? (Piège: pingouin = oiseau mais ne vole pas → "vole")
+  {q:'Vole ou ne vole pas ?', cats:['vole','vole-pas'],
+   labels:['🕊️ Vole','🚫 Ne vole pas'],
+   customFn:a=>{
+     // Oiseaux volants + insectes volants (papillon, abeille, moustique, coccinelle)
+     // Pièges : pingouin (oiseau qui ne vole pas), autruche, araignée, chenille, grillon
+     const volants=['🦅','🦉','🐦','🦜','🦩','🦚','🦢','🦤',  // oiseaux volants
+                    '🦋','🐝','🦟','🐞','🦗'];                  // insectes volants (grillon peut sauter mais pas voler)
+     // Non-volants : pingouin, canard (vole peu), autruche, chenille, araignée, grillon
+     const nonVolants=['🐧','🐛','🕷️','🦗'];
+     if(nonVolants.includes(a.e)) return 'vole-pas';
+     return volants.includes(a.e)?'vole':'vole-pas';
+   },
+   trick:'Attention : 🐧 Pingouin et 🦆 Canard sont des oiseaux mais...',
+  },
+  // Rule 2: Sauvage ou Apprivoisé ? (Piège: cheval de ferme, lapin domestique vs lapin sauvage)
+  {q:'Sauvage ou Apprivoisé ?', cats:['sauvage','apprivoisé'],
+   labels:['🌿 Sauvage','🏠 Apprivoisé'],
+   customFn:a=>(['domestique','ferme'].includes(a.cat))?'apprivoisé':'sauvage',
+  },
+  // Rule 3: Vit dans l'eau ou sur terre ? (Piège: loutre, phoque, grenouille)
+  {q:'Aquatique ou Terrestre ?', cats:['aquatique','terrestre'],
+   labels:['🌊 Aquatique','🌲 Terrestre'],
+   customFn:a=>{
+     const aqua=['🐬','🐙','🦈','🐠','🦭','🐟','🦞','🦀'];
+     const semiq=['🦦','🐊','🐢','🐧'];
+     if(aqua.includes(a.e))return 'aquatique';
+     if(semiq.includes(a.e))return 'aquatique'; // semi-aquatiques → piège!
+     return 'terrestre';
+   },
+  },
+];
+
+// Sort categories — clear, unambiguous rules
+const SORT_SETS = [
+  // Mammifères vs Oiseaux (clear-cut)
+  {rule:'Mammifère ou Oiseau ?',
+   cats:['mammifère','oiseau'],
+   icons:['🦊','🦅'],labels:['Mammifère','Oiseau'],
+   customFn:a=>a.cat==='oiseau'?'oiseau':(a.cat==='mammifère'||a.cat==='ferme'||a.cat==='domestique')?'mammifère':null,
+   filterFn:a=>['mammifère','oiseau','ferme','domestique'].includes(a.cat)&&!(a.cat==='ferme'&&a.e==='🐔')&&a.e!=='🦃'&&a.e!=='🐓'},
+
+  // Vit dans l'eau vs sur terre (clear with some traps)
+  {rule:'Aquatique ou Terrestre ?',
+   cats:['aquatique','terrestre'],
+   icons:['🌊','🌲'],labels:['Aquatique','Terrestre'],
+   customFn:a=>{
+     const aqua=['🐬','🐙','🦈','🐠','🦭','🦑','🦞','🦀','🐡','🐳','🐟'];
+     const semiAqua=['🦦','🐊','🐢','🐸'];
+     if(aqua.includes(a.e)||semiAqua.includes(a.e)) return 'aquatique';
+     return 'terrestre';
+   },
+   filterFn:a=>true},
+
+  // Sauvage vs Apprivoisé (clear)
+  {rule:'Sauvage ou Apprivoisé ?',
+   cats:['sauvage','apprivoisé'],
+   icons:['🌿','🏠'],labels:['Sauvage','Apprivoisé'],
+   customFn:a=>(['domestique','ferme'].includes(a.cat))?'apprivoisé':'sauvage',
+   filterFn:a=>true},
+
+  // Vole ou ne vole pas (fun & tricky)
+  {rule:'Vole ou ne vole pas ?',
+   cats:['vole','vole-pas'],
+   icons:['🕊️','🚫'],labels:['Vole','Ne vole pas'],
+   customFn:a=>{
+     const volants=['🦅','🦉','🐦','🦜','🦩','🦚','🦢','🦋','🐝','🦟','🐞'];
+     const nonVolants=['🐧','🐛','🕷️','🦗','🐊','🐢','🦎','🐸'];
+     if(nonVolants.includes(a.e)) return 'vole-pas';
+     if(volants.includes(a.e)) return 'vole';
+     return 'vole-pas'; // tout le reste ne vole pas
+   },
+   filterFn:a=>['insecte','oiseau','reptile'].includes(a.cat)||['🐧','🦋','🐝','🦟','🐞','🦗','🕷️','🐛'].includes(a.e)},
+];
+
+// ══════════════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════════════
+const CONFIGS = {
+  easy:    {label:'Facile',   timeMs:4000, trials:12, choices:2, sortItems:4, endless:false, maxErrors:99},
+  medium:  {label:'Moyen',    timeMs:3000, trials:16, choices:3, sortItems:5, endless:false, maxErrors:99},
+  hard:    {label:'Difficile',timeMs:2000, trials:20, choices:4, sortItems:6, endless:false, maxErrors:99},
+  endless: {label:'Infini ♾',timeMs:3000, trials:999,choices:3, sortItems:5, endless:true,  maxErrors:3},
+};
+
+// ══════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════
+let currentMode='find', currentDiff='easy';
+let cfg=CONFIGS.easy;
+let score=0,errors=0,correct=0,streak=0,bestStreak=0,lives=3;
+let trial=0, rtList=[], trialStart=0;
+let running=false, sessionTok=0;
+let timerRaf=null;
+
+// ══════════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════════
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
+function shuffle(a){const r=[...a];for(let i=r.length-1;i>0;i--){const j=rand(0,i);[r[i],r[j]]=[r[j],r[i]];}return r;}
+function livesStr(n,max=3){return '❤'.repeat(Math.max(0,n))+'🖤'.repeat(Math.max(0,max-n));}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function toast(msg,type,dur=1600){const el=document.getElementById('toast');el.textContent=msg;el.className='show '+type;clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),dur);}
+
+function selectMode(m,el){currentMode=m;document.querySelectorAll('.mode-card').forEach(c=>c.classList.remove('selected'));el.classList.add('selected');}
+function selectDiff(el,d){currentDiff=d;document.querySelectorAll('.diff-card').forEach(c=>c.classList.remove('selected'));el.classList.add('selected');}
+
+function markOk(pts){
+  correct++;streak++;if(streak>bestStreak)bestStreak=streak;
+  score+=pts*Math.max(1,Math.ceil(streak/3));
+}
+function markKo(){
+  errors++;streak=0;
+  if(cfg.endless){
+    lives--;
+    if(lives<=0)return true;
+  }
+  return false;
+}
+
+function cancelTimerRaf(){if(timerRaf){cancelAnimationFrame(timerRaf);timerRaf=null;}}
+
+function runTimerBar(barId,totalMs,onExpire){
+  cancelTimerRaf();
+  const bar=document.getElementById(barId);
+  const start=performance.now();
+  const myTok=sessionTok;
+  function step(){
+    if(!running||sessionTok!==myTok)return;
+    const pct=Math.max(0,1-(performance.now()-start)/totalMs);
+    bar.style.width=(pct*100)+'%';
+    bar.style.background=pct>0.5?'var(--green)':pct>0.25?'var(--sun)':'var(--red)';
+    if(pct>0)timerRaf=requestAnimationFrame(step);
+    else onExpire();
+  }
+  timerRaf=requestAnimationFrame(step);
+}
+
+function flashArena(id,type){
+  const el=document.getElementById(id);
+  el.classList.remove('flash-ok','flash-ko');
+  void el.offsetWidth;
+  el.classList.add(type==='ok'?'flash-ok':'flash-ko');
+}
+
+function animalCat(a,rule){
+  if(rule.customFn) return rule.customFn(a);
+  if(rule.useSize) return a.size;
+  if(rule.useSub)  return a.sub;
+  return a.cat;
+}
+
+// ══════════════════════════════════════════════════
+//  LAUNCH
+// ══════════════════════════════════════════════════
+function launchGame(){
+  cfg=CONFIGS[currentDiff];
+  score=0;errors=0;correct=0;streak=0;bestStreak=0;
+  lives=cfg.maxErrors;trial=0;rtList=[];running=true;
+  sessionTok++;
+  countdown(()=>({find:startFind,react:startReact,sort:startSort})[currentMode]());
+}
+function replayGame(){launchGame();}
+
+function countdown(cb){
+  showScreen('s-countdown');
+  let n=3;const el=document.getElementById('cd-num');
+  document.getElementById('cd-msg').textContent=({find:'🎯 Identifie l\'animal cible !',react:'⚡ Catégorise vite !',sort:'🗂️ Trie les animaux !'})[currentMode];
+  el.textContent=n;
+  const iv=setInterval(()=>{
+    n--;
+    if(n<=0){clearInterval(iv);cb();}
+    else{el.textContent=n;el.style.animation='none';void el.offsetWidth;el.style.animation='cPop .7s cubic-bezier(.175,.885,.32,1.275)';}
+  },900);
+}
+
+function showResults(){
+  running=false;cancelTimerRaf();sessionTok++;
+  const avgRt=rtList.length?Math.round(rtList.reduce((a,b)=>a+b,0)/rtList.length):null;
+  const acc=correct+errors>0?Math.round(correct/(correct+errors)*100):0;
+  document.getElementById('res-score').textContent=score;
+  document.getElementById('res-rt').textContent=avgRt?avgRt+'ms':'—';
+  document.getElementById('res-acc').textContent=acc+'%';
+  document.getElementById('res-best').textContent=bestStreak;
+  let badge,title,msg,cls;
+  if(acc>=90&&(avgRt===null||avgRt<1200)){badge='🏆';title='Réflexes de pro !';cls='perf-s';msg='🌟 Incroyable ! Ta vitesse de traitement est exceptionnelle. Hermine ψ est fière de toi !';}
+  else if(acc>=75){badge='🥈';title='Excellent !';cls='perf-a';msg='⚡ Très bien ! Tu traites l\'information vite et avec précision. Continue !';}
+  else if(acc>=55){badge='🥉';title='Bien joué !';cls='perf-b';msg='💪 Bon effort ! Avec de l\'entraînement ta vitesse va encore progresser.';}
+  else{badge='🐾';title='Continue !';cls='perf-c';msg='🔄 Pas facile ! Recommence pour améliorer tes réflexes cognitifs.';}
+  document.getElementById('res-badge').textContent=badge;
+  document.getElementById('res-title').textContent=title;
+  const pm=document.getElementById('res-perf');pm.textContent=msg;pm.className='perf-msg '+cls;
+  showScreen('s-results');
+}
+
+// ══════════════════════════════════════════════════
+//  GAME 1 — FIND (Identifier)
+// ══════════════════════════════════════════════════
+let findTarget=null, findActive=false;
+
+function startFind(){
+  document.getElementById('find-diff-label').textContent=cfg.label;
+  showScreen('s-find');updateFindHUD();
+  setTimeout(()=>nextFind(),500);
+}
+
+function updateFindHUD(){
+  document.getElementById('find-score').textContent=score;
+  document.getElementById('find-streak').textContent=streak;
+  document.getElementById('find-lives').textContent=cfg.endless?livesStr(lives,cfg.maxErrors):'∞';
+  document.getElementById('find-prog').style.width=(cfg.endless?0:Math.min(100,trial/cfg.trials*100))+'%';
+}
+
+// ── FIND GAME: Color-based distractor system ──
+const ANIMAL_COLORS = [
+  {name:'Rouge',    body:'#e53935', accent:'#b71c1c', eye:'#fff'},
+  {name:'Bleu',     body:'#1e88e5', accent:'#0d47a1', eye:'#fff'},
+  {name:'Vert',     body:'#43a047', accent:'#1b5e20', eye:'#fff'},
+  {name:'Orange',   body:'#fb8c00', accent:'#e65100', eye:'#fff'},
+  {name:'Violet',   body:'#8e24aa', accent:'#4a148c', eye:'#fff'},
+  {name:'Rose',     body:'#e91e63', accent:'#880e4f', eye:'#fff'},
+  {name:'Jaune',    body:'#fdd835', accent:'#f57f17', eye:'#333'},
+  {name:'Cyan',     body:'#00acc1', accent:'#006064', eye:'#fff'},
+];
+
+// Similar-looking animal pairs (visually confusing)
+const LOOK_ALIKE_GROUPS = [
+  ['🐱','🐯','🦁','🐆'],   // félins
+  ['🐶','🐺','🦊','🦝'],   // canidés
+  ['🐸','🦎','🐊','🐢'],   // verts / reptiles
+  ['🐇','🐭','🐿','🦔'],   // petits ronds
+  ['🦅','🦆','🦢','🐧'],   // oiseaux
+  ['🐬','🦭','🐳','🦈'],   // marins
+  ['🐄','🐏','🐖','🐴'],   // ferme
+  ['🦋','🐝','🐛','🦗'],   // insectes
+];
+
+// Renders a colored animal: just emoji on a colored background box
+function renderColoredAnimal(el, emoji, colorObj){
+  el.textContent = emoji;
+  el.style.background = colorObj.body + '30'; // light tint
+  el.style.border = '3px solid ' + colorObj.body;
+}
+
+// Keep drawColoredAnimal as alias for canvas-less version (called on divs now)
+function drawColoredAnimal(el, emoji, colorObj){
+  renderColoredAnimal(el, emoji, colorObj);
+}
+
+function getLookAlikeGroup(emoji){
+  return LOOK_ALIKE_GROUPS.find(g=>g.includes(emoji)) || null;
+}
+
+function getEndlessFindCfg(){
+  // Progressive difficulty in endless mode
+  const t=trial;
+  return {
+    choices: t<5?2:t<10?3:4,
+    timeMs:  Math.max(1200, 4000 - t*80),
+  };
+}
+
+// Find mode: alternate between color mode and look-alike mode
+let findMode='color'; // 'color' | 'lookalike'
+let findTargetColor=null;
+
+function nextFind(){
+  const myTok=sessionTok;
+  if(!running||myTok!==sessionTok)return;
+  if(!cfg.endless&&trial>=cfg.trials){showResults();return;}
+  trial++;findActive=false;
+
+  // Alternate modes every 3 trials for variety
+  if(trial%3===0) findMode=(findMode==='color'?'lookalike':'color');
+
+  // Endless: update difficulty
+  const eCfg=cfg.endless?getEndlessFindCfg():{choices:cfg.choices,timeMs:cfg.timeMs};
+  const nChoices=eCfg.choices;
+  const timeMs=eCfg.timeMs;
+
+  // Pick target animal
+  findTarget=pick(ANIMALS);
+  const grid=document.getElementById('find-choices');
+
+  if(findMode==='color'){
+    // ── COLOR MODE: same animal, different colors ──
+    // Target gets a random color
+    const colorSet=shuffle(ANIMAL_COLORS).slice(0,nChoices);
+    findTargetColor=colorSet[0];
+
+    // Show target: emoji on colored background
+    document.getElementById('find-target-label').textContent=
+      `Trouve : ${findTarget.n} ${findTargetColor.name}`;
+    const tBox=document.getElementById('find-target-box');
+    renderColoredAnimal(tBox, findTarget.e, findTargetColor);
+
+    // Choices: same animal, different colored backgrounds
+    const choiceColors=shuffle(colorSet);
+    grid.style.cssText=`display:grid;gap:10px;width:100%;grid-template-columns:${nChoices<=2?'1fr 1fr':nChoices===3?'1fr 1fr 1fr':'1fr 1fr'};`;
+    grid.innerHTML='';
+    choiceColors.forEach(col=>{
+      const btn=document.createElement('button');
+      btn.className='ans-btn';
+      btn.style.cssText='padding:10px 8px;border-radius:14px;border:3px solid '+col.body+';background:'+col.body+'22;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .12s;font-family:"Baloo 2",cursive;font-weight:700;';
+      const animalSpan=document.createElement('span');
+      animalSpan.style.cssText='font-size:2.4rem;line-height:1;';
+      animalSpan.textContent=findTarget.e;
+      const label=document.createElement('span');
+      label.className='ans-text';label.textContent=col.name;label.style.color=col.body;
+      btn.appendChild(animalSpan);btn.appendChild(label);
+      btn.onclick=()=>{if(findActive)findAnswerColor(col,btn,myTok);};
+      grid.appendChild(btn);
+    });
+
+  } else {
+    // ── LOOK-ALIKE MODE: similar animals, same color ──
+    const sharedColor=pick(ANIMAL_COLORS);
+    findTargetColor=sharedColor;
+    document.getElementById('find-target-label').textContent=`Trouve : ${findTarget.n}`;
+    // Target shown with same color as distractors
+    const tBox2=document.getElementById('find-target-box');
+    renderColoredAnimal(tBox2, findTarget.e, sharedColor);
+
+    // Look-alike distractors: same visual group
+    const group=getLookAlikeGroup(findTarget.e);
+    let distractorEmojis=group ? group.filter(e=>e!==findTarget.e)
+      : ANIMALS.filter(a=>a.cat===findTarget.cat&&a.e!==findTarget.e).map(a=>a.e);
+    if(distractorEmojis.length<nChoices-1){
+      const extra=ANIMALS.filter(a=>a.e!==findTarget.e&&!distractorEmojis.includes(a.e)).map(a=>a.e);
+      distractorEmojis=[...distractorEmojis,...shuffle(extra)];
+    }
+    const distractors=shuffle(distractorEmojis).slice(0,nChoices-1);
+    const allEmojis=shuffle([findTarget.e,...distractors]);
+
+    grid.style.cssText=`display:grid;gap:10px;width:100%;grid-template-columns:${nChoices<=2?'1fr 1fr':nChoices===3?'1fr 1fr 1fr':'1fr 1fr'};`;
+    grid.innerHTML='';
+    allEmojis.forEach(e=>{
+      const animal=ANIMALS.find(a=>a.e===e)||{e,n:e};
+      const btn=document.createElement('button');
+      btn.className='ans-btn';
+      // Same background color for all — only shape/emoji differs
+      btn.style.cssText='padding:10px 8px;border-radius:14px;border:3px solid '+sharedColor.body+';background:'+sharedColor.body+'22;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .12s;font-family:"Baloo 2",cursive;font-weight:700;';
+      const animalSpan=document.createElement('span');
+      animalSpan.style.cssText='font-size:2.4rem;line-height:1;';
+      animalSpan.textContent=e;
+      const label=document.createElement('span');
+      label.className='ans-text';label.textContent=animal.n;
+      btn.appendChild(animalSpan);btn.appendChild(label);
+      btn.onclick=()=>{if(findActive)findAnswerLookAlike(e,btn,myTok);};
+      grid.appendChild(btn);
+    });
+  }
+
+  findActive=true;
+  trialStart=performance.now();
+  runTimerBar('find-timer',timeMs,()=>{
+    if(!running||myTok!==sessionTok||!findActive)return;
+    findActive=false;
+    const dead=markKo();updateFindHUD();
+    toast('⏰ Trop lent !','ko');flashArena('find-arena','ko');
+    if(dead){setTimeout(()=>showResults(),1200);return;}
+    setTimeout(()=>nextFind(),1200);
+  });
+  updateFindHUD();
+}
+
+function findAnswerColor(col,btn,tok){
+  if(!running||tok!==sessionTok||!findActive)return;
+  findActive=false;cancelTimerRaf();
+  const rt=Math.round(performance.now()-trialStart);rtList.push(rt);
+  document.getElementById('find-rt').textContent=rt;
+  if(col.name===findTargetColor.name){
+    btn.classList.add('correct');
+    const pts=Math.max(50,Math.round(300-rt/10));
+    markOk(pts);toast(`✅ ${findTargetColor.name} ! +${pts}pts — ${rt}ms`,'ok');
+    flashArena('find-arena','ok');
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#find-choices .ans-btn').forEach(b=>{
+      const cvs=b.querySelector('canvas');
+      if(cvs){const tmpCtx=cvs.getContext('2d');const imgData=tmpCtx.getImageData(cvs.width-12,cvs.height-12,1,1);
+      // highlight correct by checking label
+      if(b.querySelector('.ans-text')&&b.querySelector('.ans-text').textContent===findTargetColor.name)b.classList.add('correct');}
+    });
+    const dead=markKo();toast(`❌ C'était ${findTargetColor.name} !`,'ko',2000);
+    flashArena('find-arena','ko');updateFindHUD();
+    if(dead){setTimeout(()=>showResults(),1500);return;}
+  }
+  updateFindHUD();setTimeout(()=>nextFind(),900);
+}
+
+function findAnswerLookAlike(emoji,btn,tok){
+  if(!running||tok!==sessionTok||!findActive)return;
+  findActive=false;cancelTimerRaf();
+  const rt=Math.round(performance.now()-trialStart);rtList.push(rt);
+  document.getElementById('find-rt').textContent=rt;
+  if(emoji===findTarget.e){
+    btn.classList.add('correct');
+    const pts=Math.max(50,Math.round(300-rt/10));
+    markOk(pts);toast(`✅ ${findTarget.n} ! +${pts}pts — ${rt}ms`,'ok');
+    flashArena('find-arena','ok');
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#find-choices .ans-btn').forEach(b=>{
+      if(b.querySelector('.ans-text')&&b.querySelector('.ans-text').textContent===findTarget.n)b.classList.add('correct');
+    });
+    const dead=markKo();
+    toast(`❌ C'était ${findTarget.n} !`,'ko',2000);
+    flashArena('find-arena','ko');updateFindHUD();
+    if(dead){setTimeout(()=>showResults(),1500);return;}
+  }
+  updateFindHUD();setTimeout(()=>nextFind(),900);
+}
+
+// Remove old findAnswer (now split into findAnswerColor + findAnswerLookAlike)
+function findAnswer(){}
+
+function findAnswer(animal,btn,tok){
+  if(!running||tok!==sessionTok||!findActive)return;
+  findActive=false;cancelTimerRaf();
+  const rt=Math.round(performance.now()-trialStart);
+  rtList.push(rt);
+  document.getElementById('find-rt').textContent=rt;
+
+  if(animal.e===findTarget.e){
+    btn.classList.add('correct');
+    const pts=Math.max(50,Math.round(300-rt/10));
+    markOk(pts);
+    toast(`✅ +${pts} pts — ${rt}ms`,'ok');
+    flashArena('find-arena','ok');
+  } else {
+    btn.classList.add('wrong');
+    // highlight correct
+    document.querySelectorAll('#find-choices .ans-btn').forEach(b=>{
+      if(b.querySelector('.ans-emoji').textContent===findTarget.e)b.classList.add('correct');
+    });
+    const dead=markKo();
+    toast(`❌ C'était ${findTarget.e} ${findTarget.n}`,'ko',2000);
+    flashArena('find-arena','ko');
+    updateFindHUD();
+    if(dead){setTimeout(()=>showResults(),1500);return;}
+  }
+  updateFindHUD();
+  setTimeout(()=>nextFind(),900);
+}
+
+// ══════════════════════════════════════════════════
+//  GAME 2 — REACT (Catégoriser)
+// ══════════════════════════════════════════════════
+let reactRule=null, reactAnimal=null, reactActive=false;
+
+function startReact(){
+  document.getElementById('react-diff-label').textContent=cfg.label;
+  reactRule=REACT_RULES[0]; // always start with rule 1
+  buildReactButtons();
+  showScreen('s-react');updateReactHUD();
+  setTimeout(()=>nextReact(),500);
+}
+
+function buildReactButtons(shuffleOrder=false){
+  const grid=document.getElementById('react-choices');
+  grid.className='ans-grid ans-grid-2';
+  grid.innerHTML='';
+  // Shuffle button positions to prevent muscle memory
+  let indices=[0,1];
+  if(shuffleOrder && Math.random()<0.5) indices=[1,0];
+  indices.forEach(i=>{
+    const lbl=reactRule.labels[i];
+    const btn=document.createElement('button');
+    btn.className='ans-btn';
+    btn.innerHTML=`<span class="ans-emoji">${lbl.split(' ')[0]}</span><span class="ans-text">${lbl.split(' ').slice(1).join(' ')}</span>`;
+    btn.dataset.cat=reactRule.cats[i];
+    btn.onclick=()=>{if(reactActive)reactAnswer(reactRule.cats[i]);};
+    grid.appendChild(btn);
+  });
+}
+
+function updateReactHUD(){
+  document.getElementById('react-score').textContent=score;
+  document.getElementById('react-streak').textContent=streak;
+  document.getElementById('react-lives').textContent=cfg.endless?livesStr(lives,cfg.maxErrors):'∞';
+  document.getElementById('react-prog').style.width=(cfg.endless?0:Math.min(100,trial/cfg.trials*100))+'%';
+}
+
+function nextReact(){
+  const myTok=sessionTok;
+  if(!running||myTok!==sessionTok)return;
+  if(!cfg.endless&&trial>=cfg.trials){showResults();return;}
+  trial++;reactActive=false;
+
+  // Switch rule every 8 trials in any mode (adds cognitive switching challenge)
+  if(trial>1 && trial%8===1){
+    const newRule=pick(REACT_RULES.filter(r=>r!==reactRule));
+    reactRule=newRule;
+    buildReactButtons(true);
+    document.getElementById('react-rule-label').textContent=reactRule.q;
+    toast('🔄 Nouvelle règle : '+reactRule.q,'info',2500);
+  }
+  document.getElementById('react-rule-label').textContent=reactRule.q;
+
+  // All animals are valid — customFn maps every animal to a category
+  reactAnimal=pick(ANIMALS);
+  document.getElementById('react-stim').textContent=reactAnimal.e;
+  document.getElementById('react-stim-name').textContent=reactAnimal.n;
+
+  // Reshuffle button positions each trial (breaks hover-lock habit)
+  buildReactButtons(true);
+
+  reactActive=true;trialStart=performance.now();
+  runTimerBar('react-timer',cfg.timeMs,()=>{
+    if(!running||myTok!==sessionTok||!reactActive)return;
+    reactActive=false;
+    const dead=markKo();updateReactHUD();
+    toast('⏰ Trop lent !','ko');flashArena('react-arena','ko');
+    if(dead){setTimeout(()=>showResults(),1200);return;}
+    setTimeout(()=>nextReact(),1200);
+  });
+  updateReactHUD();
+}
+
+function reactAnswer(cat){
+  if(!running||!reactActive)return;
+  // Minimum 300ms — prevents hovering and clicking immediately
+  const elapsed=performance.now()-trialStart;
+  if(elapsed<300){toast('⚡ Trop rapide ! Observe !','info',1200);return;}
+  reactActive=false;cancelTimerRaf();
+  const rt=Math.round(performance.now()-trialStart);
+  rtList.push(rt);
+  document.getElementById('react-rt').textContent=rt;
+
+  const correctCat=animalCat(reactAnimal,reactRule);
+  const ok=(cat===correctCat);
+
+  document.querySelectorAll('#react-choices .ans-btn').forEach(b=>{
+    if(b.dataset.cat===correctCat)b.classList.add('correct');
+    else if(b.dataset.cat===cat&&!ok)b.classList.add('wrong');
+  });
+
+  if(ok){
+    const pts=Math.max(50,Math.round(250-rt/12));
+    markOk(pts);toast(`✅ ${reactAnimal.n} → ${cat} ! +${pts}pts`,'ok');
+    flashArena('react-arena','ok');
+  } else {
+    const dead=markKo();
+    toast(`❌ ${reactAnimal.n} → ${correctCat} !`,'ko',2000);
+    flashArena('react-arena','ko');
+    updateReactHUD();
+    if(dead){setTimeout(()=>showResults(),1500);return;}
+  }
+  updateReactHUD();
+  setTimeout(()=>nextReact(),900);
+}
+
+// ══════════════════════════════════════════════════
+//  GAME 3 — SORT (Trier) — one animal at a time, buttons
+// ══════════════════════════════════════════════════
+let sortSet=null, sortItems=[], sortIdx=0, sortTotal=0, sortActive=false;
+
+function startSort(){
+  document.getElementById('sort-diff-label').textContent=cfg.label;
+  sortSet=pick(SORT_SETS);
+  showScreen('s-sort');updateSortHUD();
+  setTimeout(()=>newSortRound(),500);
+}
+
+function updateSortHUD(){
+  document.getElementById('sort-score').textContent=score;
+  document.getElementById('sort-streak').textContent=streak;
+  document.getElementById('sort-lives').textContent=cfg.endless?livesStr(lives,cfg.maxErrors):'∞';
+  document.getElementById('sort-prog').style.width=(cfg.endless?0:Math.min(100,trial/cfg.trials*100))+'%';
+}
+
+function newSortRound(){
+  const myTok=sessionTok;
+  if(!running||myTok!==sessionTok)return;
+  if(!cfg.endless&&trial>=cfg.trials){showResults();return;}
+  trial++;sortActive=false;
+
+  // Possibly change sort rule in endless/hard
+  if(trial>1&&((cfg.endless&&(trial-1)%5===0)||(currentDiff==='hard'&&(trial-1)%4===0))){
+    const newSet=pick(SORT_SETS.filter(s=>s!==sortSet));
+    sortSet=newSet;
+    toast('🔄 Nouveau tri : '+sortSet.rule,'info',2000);
+  }
+  document.getElementById('sort-rule').textContent=sortSet.rule.toUpperCase();
+
+  // Build category buttons (persistent below arena)
+  buildSortCatButtons(myTok);
+
+  // Pick animals for this round
+  const validPool=ANIMALS.filter(a=>{
+    if(sortSet.filterFn && !sortSet.filterFn(a)) return false;
+    const cat=animalCat(a,sortSet);
+    return cat && sortSet.cats.includes(cat);
+  });
+  sortItems=shuffle(validPool).slice(0,cfg.sortItems);
+  sortIdx=0;sortTotal=sortItems.length;
+
+  // Clear done list
+  document.getElementById('sort-done-list').innerHTML='';
+
+  // Show first animal
+  showSortAnimal(myTok);
+  updateSortHUD();
+}
+
+function buildSortCatButtons(myTok){
+  const grid=document.getElementById('sort-cat-buttons');
+  grid.className='ans-grid '+(sortSet.cats.length===2?'ans-grid-2':'ans-grid-3');
+  grid.innerHTML='';
+  // Shuffle button order each round to break positional habits
+  const indices=shuffle(sortSet.cats.map((_,i)=>i));
+  indices.forEach(i=>{
+    const cat=sortSet.cats[i];
+    const btn=document.createElement('button');
+    btn.className=`ans-btn sort-bucket-${i}`;
+    btn.style.cssText="padding:14px 8px;border-radius:14px;border:2.5px solid;background:var(--card);font-family:'Baloo 2',cursive;font-weight:700;font-size:.9rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .12s;";
+    btn.innerHTML=`<span style="font-size:1.8rem">${sortSet.icons[i]}</span><span>${sortSet.labels[i]}</span>`;
+    // Color by bucket
+    const colors=[['rgba(22,163,74,.2)','var(--green)'],['rgba(220,38,38,.2)','var(--red)'],['rgba(245,158,11,.2)','var(--sun)'],['rgba(124,58,237,.2)','var(--psy)']];
+    btn.style.borderColor=colors[i][1];
+    btn.style.color=colors[i][1];
+    btn.onclick=()=>{if(sortActive&&myTok===sessionTok)sortAnswer(cat,btn,i,myTok);};
+    grid.appendChild(btn);
+  });
+}
+
+function showSortAnimal(myTok){
+  if(sortIdx>=sortTotal){
+    // Round complete
+    cancelTimerRaf();
+    toast('🎉 Tous triés ! +'+sortTotal+'×','ok',1200);
+    document.getElementById('sort-cat-buttons').innerHTML='';
+    setTimeout(()=>newSortRound(),1200);
+    return;
+  }
+  const animal=sortItems[sortIdx];
+  document.getElementById('sort-current-animal').textContent=animal.e;
+  document.getElementById('sort-current-name').textContent=animal.n;
+  document.getElementById('sort-progress-label').textContent=`Animal ${sortIdx+1} / ${sortTotal}`;
+
+  // Re-enable buttons
+  document.querySelectorAll('#sort-cat-buttons .ans-btn').forEach(b=>{b.disabled=false;b.style.opacity='1';});
+
+  sortActive=true;trialStart=performance.now();
+  // Per-animal timer
+  const tMs=cfg.endless?Math.max(1500,cfg.timeMs-correct*30):cfg.timeMs;
+  runTimerBar('sort-timer',tMs,()=>{
+    if(!running||myTok!==sessionTok||!sortActive)return;
+    sortActive=false;
+    const dead=markKo();updateSortHUD();
+    toast('⏰ Trop lent !','ko');flashArena('sort-arena','ko');
+    if(dead){setTimeout(()=>showResults(),1200);return;}
+    sortIdx++;setTimeout(()=>showSortAnimal(myTok),1000);
+  });
+}
+
+function sortAnswer(cat,btn,btnIdx,myTok){
+  if(!sortActive||myTok!==sessionTok)return;
+  const elapsed=performance.now()-trialStart;
+  if(elapsed<250){toast('⚡ Observe !','info',1000);return;}
+  sortActive=false;cancelTimerRaf();
+  // Disable all buttons briefly
+  document.querySelectorAll('#sort-cat-buttons .ans-btn').forEach(b=>{b.disabled=true;b.style.opacity='.5';});
+
+  const animal=sortItems[sortIdx];
+  const correctCat=animalCat(animal,sortSet);
+  const rt=Math.round(performance.now()-trialStart);
+  rtList.push(rt);
+
+  if(cat===correctCat){
+    btn.style.opacity='1';
+    btn.style.transform='scale(1.05)';
+    setTimeout(()=>btn.style.transform='',200);
+    const pts=Math.max(30,Math.round(200-rt/15));
+    markOk(pts);
+    flashArena('sort-arena','ok');
+    toast(`✅ ${animal.n} → ${sortSet.labels[sortSet.cats.indexOf(cat)]} +${pts}pts`,'ok',1000);
+    // Add to done list
+    const chip=document.createElement('span');
+    chip.title=animal.n;chip.textContent=animal.e;
+    chip.style.cssText='font-size:1.4rem;background:rgba(22,163,74,.15);border-radius:8px;padding:2px 4px;border:1px solid rgba(22,163,74,.3);';
+    document.getElementById('sort-done-list').appendChild(chip);
+  } else {
+    btn.style.opacity='1';
+    const dead=markKo();
+    flashArena('sort-arena','ko');
+    toast(`❌ ${animal.n} → ${correctCat} !`,'ko',2000);
+    // Mark wrong in done list
+    const chip=document.createElement('span');
+    chip.title=animal.n+'❌';chip.textContent=animal.e;
+    chip.style.cssText='font-size:1.4rem;background:rgba(220,38,38,.15);border-radius:8px;padding:2px 4px;border:1px solid rgba(220,38,38,.3);';
+    document.getElementById('sort-done-list').appendChild(chip);
+    updateSortHUD();
+    if(dead){setTimeout(()=>showResults(),1500);return;}
+  }
+  updateSortHUD();
+  sortIdx++;
+  setTimeout(()=>showSortAnimal(myTok),700);
+}
+
+// ══════════════════════════════════════════════════
+//  QUIT MODAL
+// ══════════════════════════════════════════════════
+function openQuit(){document.getElementById('quit-modal').classList.add('open');}
+function closeQuit(){document.getElementById('quit-modal').classList.remove('open');}
+function doQuit(){
+  closeQuit();running=false;sessionTok++;cancelTimerRaf();
+  showScreen('s-home');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Le Donjon des Règles — Flexibilité Cognitive</title>
+<link rel="stylesheet" href="../../assets/fonts/donjon-des-regles.css">
+<style>
+:root {
+  --stone:    #1c1a2e;
+  --stone2:   #252340;
+  --stone3:   #2f2c50;
+  --wall:     #0d0c1a;
+  --gold:     #f0c040;
+  --gold2:    #c8971a;
+  --ember:    #e8622a;
+  --ice:      #7ecfea;
+  --poison:   #6ddc7a;
+  --magic:    #c084fc;
+  --text:     #f0e6cc;
+  --muted:    #9488bb;
+  --radius:   14px;
+  --cell:     52px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--wall);
+  font-family: 'Crimson Pro', serif;
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow-x: hidden;
+}
+
+/* Parchment texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.01) 2px, rgba(255,255,255,0.01) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255,255,255,0.005) 2px, rgba(255,255,255,0.005) 4px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Torch flicker corners */
+body::after {
+  content: '🔥';
+  position: fixed;
+  top: 20px; right: 24px;
+  font-size: 2rem;
+  animation: flicker 2.5s ease-in-out infinite;
+  z-index: 0;
+}
+
+@keyframes flicker {
+  0%,100% { opacity: 1; transform: scale(1) rotate(-3deg); }
+  25%      { opacity: 0.8; transform: scale(0.95) rotate(2deg); }
+  50%      { opacity: 1; transform: scale(1.05) rotate(-1deg); }
+  75%      { opacity: 0.85; transform: scale(0.98) rotate(3deg); }
+}
+
+.wrapper {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 700px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+/* ── SCREENS ── */
+.screen { display: none; flex-direction: column; align-items: center; gap: 16px; width: 100%; }
+.screen.active { display: flex; }
+
+/* ── TITLE ── */
+.game-title {
+  font-family: 'Cinzel Decorative', cursive;
+  font-size: clamp(1.4rem, 5vw, 2.2rem);
+  text-align: center;
+  color: var(--gold);
+  text-shadow: 0 0 20px rgba(240,192,64,0.5), 0 2px 4px rgba(0,0,0,0.8);
+  letter-spacing: 2px;
+}
+.subtitle {
+  font-size: 1rem;
+  color: var(--muted);
+  text-align: center;
+  font-style: italic;
+}
+
+/* ── STONE PANEL ── */
+.panel {
+  background: linear-gradient(145deg, var(--stone2), var(--stone));
+  border: 1px solid rgba(240,192,64,0.2);
+  border-radius: var(--radius);
+  padding: 22px 26px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+/* ── RULE BANNER ── */
+.rule-banner {
+  width: 100%;
+  border-radius: 12px;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 2px solid;
+  transition: all 0.4s ease;
+  position: relative;
+  overflow: hidden;
+}
+.rule-banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.08;
+  background: currentColor;
+}
+.rule-icon { font-size: 2rem; flex-shrink: 0; }
+.rule-content { flex: 1; }
+.rule-label {
+  font-family: 'Cinzel Decorative', cursive;
+  font-size: 0.7rem;
+  letter-spacing: 2px;
+  opacity: 0.7;
+  text-transform: uppercase;
+}
+.rule-text {
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-top: 2px;
+}
+.rule-change-flash {
+  animation: ruleFlash 0.6s ease-out;
+}
+@keyframes ruleFlash {
+  0%   { transform: scale(0.96); opacity: 0.5; }
+  50%  { transform: scale(1.03); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Rule themes */
+.rule-fire   { border-color: var(--ember);  color: var(--ember);  }
+.rule-ice    { border-color: var(--ice);    color: var(--ice);    }
+.rule-poison { border-color: var(--poison); color: var(--poison); }
+.rule-magic  { border-color: var(--magic);  color: var(--magic);  }
+
+/* ── HUD ── */
+.hud {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  width: 100%;
+}
+.hud-box {
+  background: var(--stone);
+  border: 1px solid rgba(240,192,64,0.15);
+  border-radius: 10px;
+  padding: 8px 6px;
+  text-align: center;
+}
+.hud-val {
+  font-family: 'Cinzel Decorative', cursive;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+.hud-lbl { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+.hud-gold .hud-val  { color: var(--gold); }
+.hud-steps .hud-val { color: var(--ice); }
+.hud-rules .hud-val { color: var(--magic); }
+.hud-lvl .hud-val   { color: var(--ember); }
+.hud-lives .hud-val { color: #f87171; }
+
+/* Hearts display */
+.hearts { font-size: 1.1rem; line-height: 1; letter-spacing: 2px; }
+
+/* ── MAZE ── */
+.maze-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  overflow: auto;
+}
+#maze-canvas {
+  border-radius: 10px;
+  border: 2px solid rgba(240,192,64,0.2);
+  box-shadow: 0 0 40px rgba(0,0,0,0.8), inset 0 0 60px rgba(0,0,0,0.5);
+  cursor: pointer;
+  display: block;
+  max-width: 100%;
+  image-rendering: pixelated;
+}
+
+/* ── CONTROLS ── */
+.dpad {
+  display: grid;
+  grid-template-areas: ". up ." "left . right" ". down .";
+  grid-template-columns: repeat(3, 60px);
+  grid-template-rows: repeat(3, 60px);
+  gap: 4px;
+}
+.dpad-btn {
+  background: var(--stone2);
+  border: 2px solid rgba(240,192,64,0.3);
+  border-radius: 10px;
+  color: var(--gold);
+  font-size: 1.4rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.dpad-btn:active, .dpad-btn.pressed {
+  background: rgba(240,192,64,0.15);
+  transform: scale(0.92);
+  border-color: var(--gold);
+}
+.dpad-up    { grid-area: up; }
+.dpad-left  { grid-area: left; }
+.dpad-right { grid-area: right; }
+.dpad-down  { grid-area: down; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 13px 28px; border-radius: 50px; border: none;
+  font-family: 'Cinzel Decorative', cursive; font-size: 1rem;
+  cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; letter-spacing: 1px;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: linear-gradient(135deg, var(--gold2), var(--gold)); color: var(--wall); font-weight: 700; }
+.btn-outline { background: transparent; border: 2px solid var(--gold2); color: var(--gold); }
+.btn-sm { padding: 9px 20px; font-size: 0.8rem; }
+.btn-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+/* ── LEVEL SELECT ── */
+.level-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; }
+@media (min-width: 480px) { .level-grid { grid-template-columns: repeat(4, 1fr); } }
+.level-card {
+  background: var(--stone);
+  border: 2px solid rgba(240,192,64,0.15);
+  border-radius: 12px; padding: 14px 8px;
+  cursor: pointer; text-align: center; transition: all 0.2s;
+}
+.level-card:hover { border-color: var(--gold2); transform: translateY(-2px); }
+.level-card.selected { border-color: var(--gold); background: rgba(240,192,64,0.08); }
+.level-icon { font-size: 1.8rem; display: block; margin-bottom: 6px; }
+.level-name { font-family: 'Cinzel Decorative', cursive; font-size: 0.8rem; color: var(--gold); }
+.level-desc { font-size: 0.7rem; color: var(--muted); margin-top: 4px; }
+
+/* ── RESULTS ── */
+.result-badge { font-size: 4rem; text-align: center; animation: popIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275); }
+@keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+.stat-item { background: var(--stone); border-radius: 12px; padding: 14px; text-align: center; border: 1px solid rgba(240,192,64,0.1); }
+.stat-val { font-family: 'Cinzel Decorative', cursive; font-size: 1.6rem; }
+.stat-lbl { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+.stat-gold .stat-val  { color: var(--gold); }
+.stat-steps .stat-val { color: var(--ice); }
+.stat-rules .stat-val { color: var(--magic); }
+.stat-time .stat-val  { color: var(--ember); }
+.stat-endurance .stat-val { color: #f87171; }
+
+.perf-msg { font-size: 1rem; font-weight: 600; text-align: center; padding: 14px 20px; border-radius: 12px; width: 100%; font-style: italic; }
+.perf-s { background: rgba(240,192,64,0.1); color: var(--gold); border: 1px solid rgba(240,192,64,0.3); }
+.perf-a { background: rgba(124,207,234,0.1); color: var(--ice); border: 1px solid rgba(124,207,234,0.3); }
+.perf-b { background: rgba(192,132,252,0.1); color: var(--magic); border: 1px solid rgba(192,132,252,0.3); }
+.perf-c { background: rgba(232,98,42,0.1); color: var(--ember); border: 1px solid rgba(232,98,42,0.3); }
+
+/* scroll hint */
+.key-hint { font-size: 0.8rem; color: var(--muted); text-align: center; font-style: italic; }
+
+/* intro steps */
+.intro-steps { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.intro-step {
+  display: flex; align-items: flex-start; gap: 14px;
+  background: var(--stone); border-radius: 12px; padding: 12px 16px;
+  border: 1px solid rgba(240,192,64,0.1);
+}
+.intro-step-icon { font-size: 1.6rem; flex-shrink: 0; }
+.intro-step-text { font-size: 0.9rem; line-height: 1.4; }
+.intro-step-text strong { color: var(--gold); }
+
+/* toast */
+#toast {
+  position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+  background: var(--stone2); border: 1px solid var(--gold2);
+  color: var(--text); padding: 10px 22px; border-radius: 50px;
+  font-family: 'Cinzel Decorative', cursive; font-size: 0.85rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 100;
+}
+#toast.show { opacity: 1; }
+
+/* countdown */
+.countdown-num {
+  font-family: 'Cinzel Decorative', cursive; font-size: 5rem;
+  animation: countPop 0.8s cubic-bezier(0.175,0.885,0.32,1.275);
+  color: var(--gold);
+  text-shadow: 0 0 30px rgba(240,192,64,0.7);
+}
+@keyframes countPop {
+  0% { transform: scale(2); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<div class="wrapper">
+
+  <!-- ══ HOME ══ -->
+  <div class="screen active" id="screen-home">
+    <div style="text-align:center; padding-top:8px;">
+      <div style="font-size:3rem; margin-bottom:6px;">🏰</div>
+      <div class="game-title">Le Donjon des Règles</div>
+      <div class="subtitle">Entraînement à la flexibilité cognitive</div>
+    </div>
+
+    <div class="panel">
+      <div class="intro-steps">
+        <div class="intro-step">
+          <div class="intro-step-icon">🗺️</div>
+          <div class="intro-step-text">Navigue dans le labyrinthe pour atteindre la <strong>sortie dorée</strong>. Utilise les flèches du clavier ou le pavé directionnel.</div>
+        </div>
+        <div class="intro-step">
+          <div class="intro-step-icon">⚡</div>
+          <div class="intro-step-text">Attention ! La <strong>règle de déplacement change</strong> à certains points du parcours. Tu dois t'adapter rapidement !</div>
+        </div>
+        <div class="intro-step">
+          <div class="intro-step-icon">🔮</div>
+          <div class="intro-step-text">Exemples de règles : <strong>« Avance normalement »</strong>, <strong>« Gauche = Droite »</strong>, <strong>« Haut = Bas »</strong>, <strong>« Toutes directions inversées »</strong>…</div>
+        </div>
+        <div class="intro-step">
+          <div class="intro-step-icon">🏆</div>
+          <div class="intro-step-text">Moins tu fais de pas et plus vite tu arrives, <strong>meilleur est ton score</strong>. Collecte les gemmes sur ton chemin !</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:100%">
+      <div class="subtitle" style="margin-bottom:10px; text-align:left;">Choisir un niveau :</div>
+      <div class="level-grid">
+        <div class="level-card selected" onclick="selectLevel(this,'easy')">
+          <span class="level-icon">🌿</span>
+          <div class="level-name">Apprenti</div>
+          <div class="level-desc">Labyrinthe 7×7, 1 changement de règle</div>
+        </div>
+        <div class="level-card" onclick="selectLevel(this,'medium')">
+          <span class="level-icon">⚔️</span>
+          <div class="level-name">Chevalier</div>
+          <div class="level-desc">Labyrinthe 9×9, 2 changements</div>
+        </div>
+        <div class="level-card" onclick="selectLevel(this,'hard')">
+          <span class="level-icon">💀</span>
+          <div class="level-name">Sorcier</div>
+          <div class="level-desc">Labyrinthe 11×11, 3 changements</div>
+        </div>
+        <div class="level-card" onclick="selectLevel(this,'endless')">
+          <span class="level-icon">🔱</span>
+          <div class="level-name">Maître</div>
+          <div class="level-desc">Infini — 5 erreurs max avant Game Over</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="startCountdown()">⚔️ Entrer dans le Donjon</button>
+  </div>
+
+  <!-- ══ COUNTDOWN ══ -->
+  <div class="screen" id="screen-countdown">
+    <div style="font-size:2.5rem; margin-bottom:4px;">🏰</div>
+    <div class="countdown-num" id="countdown-num">3</div>
+    <div class="subtitle">Le Donjon s'ouvre…</div>
+  </div>
+
+  <!-- ══ GAME ══ -->
+  <div class="screen" id="screen-game">
+
+    <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+      <div class="game-title" style="font-size:1.1rem;">🏰 Le Donjon</div>
+      <div style="font-size:0.8rem; color:var(--muted);" id="level-label">Apprenti</div>
+    </div>
+
+    <div class="hud">
+      <div class="hud-box hud-gold">
+        <div class="hud-val" id="hud-gold">0</div>
+        <div class="hud-lbl">💎 Gemmes</div>
+      </div>
+      <div class="hud-box hud-steps">
+        <div class="hud-val" id="hud-steps">0</div>
+        <div class="hud-lbl">👣 Pas</div>
+      </div>
+      <div class="hud-box hud-rules">
+        <div class="hud-val" id="hud-rules">0</div>
+        <div class="hud-lbl">🔮 Règles</div>
+      </div>
+      <div class="hud-box hud-lives" id="hud-lives-box">
+        <div class="hud-val hearts" id="hud-lives">❤️❤️❤️❤️❤️</div>
+        <div class="hud-lbl">⏱ Temps / Vies</div>
+      </div>
+    </div>
+
+    <!-- Rule banner -->
+    <div class="rule-banner rule-fire" id="rule-banner">
+      <div class="rule-icon" id="rule-icon">🔥</div>
+      <div class="rule-content">
+        <div class="rule-label">Règle Active</div>
+        <div class="rule-text" id="rule-text">Déplacement normal</div>
+      </div>
+    </div>
+
+    <div class="maze-wrap">
+      <canvas id="maze-canvas"></canvas>
+    </div>
+
+    <div class="key-hint">⬆️⬇️⬅️➡️ Clavier ou pavé ci-dessous</div>
+
+    <div class="dpad">
+      <button class="dpad-btn dpad-up"    id="btn-up"    onclick="move('up')">▲</button>
+      <button class="dpad-btn dpad-left"  id="btn-left"  onclick="move('left')">◀</button>
+      <button class="dpad-btn dpad-right" id="btn-right" onclick="move('right')">▶</button>
+      <button class="dpad-btn dpad-down"  id="btn-down"  onclick="move('down')">▼</button>
+    </div>
+
+    <button class="btn btn-outline btn-sm" onclick="confirmRestart()">🔄 Recommencer</button>
+  </div>
+
+  <!-- ══ RESULTS ══ -->
+  <div class="screen" id="screen-results">
+    <div class="result-badge" id="result-badge">🏆</div>
+    <div class="game-title" style="font-size:1.6rem; text-align:center;" id="result-title">Donjon conquis !</div>
+
+    <div class="stat-grid">
+      <div class="stat-item stat-gold">
+        <div class="stat-val" id="res-gold">0</div>
+        <div class="stat-lbl">💎 Gemmes récoltées</div>
+      </div>
+      <div class="stat-item stat-steps">
+        <div class="stat-val" id="res-steps">0</div>
+        <div class="stat-lbl">👣 Pas effectués</div>
+      </div>
+      <div class="stat-item stat-rules">
+        <div class="stat-val" id="res-rules">0</div>
+        <div class="stat-lbl">🔮 Changements vécus</div>
+      </div>
+      <div class="stat-item stat-time">
+        <div class="stat-val" id="res-time">—</div>
+        <div class="stat-lbl">⏱ Temps total</div>
+      </div>
+    </div>
+
+    <div class="stat-item" style="width:100%; text-align:center; background:var(--stone); border-radius:12px; border:1px solid rgba(240,192,64,0.1);">
+      <div class="stat-val" id="res-score" style="color:var(--gold); font-size:2rem;">0</div>
+      <div class="stat-lbl">⭐ Score Final</div>
+    </div>
+
+    <div class="perf-msg" id="perf-msg"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="startCountdown()">🔄 Rejouer</button>
+      <button class="btn btn-outline btn-sm" onclick="showScreen('screen-home')">🏠 Menu</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ════════════════════════════════════════
+//  RULES SYSTEM
+// ════════════════════════════════════════
+const RULES = [
+  { id:'normal',   label:'Déplacement normal',         icon:'🧭', theme:'rule-fire',
+    map: {up:'up', down:'down', left:'left', right:'right'} },
+  { id:'hflip',    label:'Gauche ↔ Droite inversées',  icon:'🌊', theme:'rule-ice',
+    map: {up:'up', down:'down', left:'right', right:'left'} },
+  { id:'vflip',    label:'Haut ↔ Bas inversés',        icon:'☠️', theme:'rule-poison',
+    map: {up:'down', down:'up', left:'left', right:'right'} },
+  { id:'fullflip', label:'Toutes directions inversées', icon:'🔮', theme:'rule-magic',
+    map: {up:'down', down:'up', left:'right', right:'left'} },
+  { id:'rotate90', label:'Rotation : ↑=→, →=↓, ↓=←, ←=↑', icon:'🌪️', theme:'rule-fire',
+    map: {up:'right', right:'down', down:'left', left:'up'} },
+];
+
+// ════════════════════════════════════════
+//  LEVEL CONFIG
+// ════════════════════════════════════════
+const LEVELS = {
+  easy:    { name:'Apprenti',        size: 7,  ruleChanges: 1, gemCount: 3,  endless: false, maxErrors: 0 },
+  medium:  { name:'Chevalier',       size: 9,  ruleChanges: 2, gemCount: 5,  endless: false, maxErrors: 0 },
+  hard:    { name:'Sorcier',         size: 11, ruleChanges: 3, gemCount: 7,  endless: false, maxErrors: 0 },
+  endless: { name:'Maître du Donjon',size: 11, ruleChanges: 4, gemCount: 8,  endless: true,  maxErrors: 5 },
+};
+
+// ════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════
+let levelKey   = 'easy';
+let config     = LEVELS.easy;
+let maze       = [];
+let player     = { x:1, y:1 };
+let exit       = { x:0, y:0 };
+let gems       = [];
+let ruleZones  = []; // { x, y, ruleIdx }
+let currentRule = 0;
+let steps      = 0;
+let gemsCollected = 0;
+let rulesTriggered = 0;
+let wallErrors = 0;      // for endless mode
+let mazesCompleted = 0;  // for endless mode
+let startTime  = 0;
+let timerInterval = null;
+let gameRunning = false;
+const CELL = 44;
+
+// ════════════════════════════════════════
+//  UI
+// ════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function selectLevel(el, key) {
+  document.querySelectorAll('.level-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  levelKey = key;
+}
+
+function showToast(msg, duration=2000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ════════════════════════════════════════
+//  COUNTDOWN
+// ════════════════════════════════════════
+function startCountdown() {
+  showScreen('screen-countdown');
+  let n = 3;
+  const el = document.getElementById('countdown-num');
+  el.textContent = n;
+  const iv = setInterval(() => {
+    n--;
+    if (n <= 0) { clearInterval(iv); initGame(); }
+    else {
+      el.textContent = n;
+      el.style.animation='none'; void el.offsetWidth;
+      el.style.animation='countPop 0.8s cubic-bezier(0.175,0.885,0.32,1.275)';
+    }
+  }, 900);
+}
+
+// ════════════════════════════════════════
+//  MAZE GENERATION (Recursive Backtracker)
+// ════════════════════════════════════════
+function generateMaze(size) {
+  // All walls
+  const grid = Array.from({length: size}, () => Array(size).fill(1));
+  function carve(x, y) {
+    grid[y][x] = 0;
+    const dirs = shuffle([{dx:2,dy:0},{dx:-2,dy:0},{dx:0,dy:2},{dx:0,dy:-2}]);
+    for (const {dx,dy} of dirs) {
+      const nx=x+dx, ny=y+dy;
+      if (nx>0&&ny>0&&nx<size-1&&ny<size-1&&grid[ny][nx]===1) {
+        grid[y+dy/2][x+dx/2]=0;
+        carve(nx,ny);
+      }
+    }
+  }
+  carve(1,1);
+  return grid;
+}
+
+function shuffle(arr) {
+  for (let i=arr.length-1;i>0;i--) {
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
+
+// ════════════════════════════════════════
+//  PLACE RULE ZONES & GEMS
+// ════════════════════════════════════════
+function getOpenCells() {
+  const cells = [];
+  for (let y=0; y<config.size; y++)
+    for (let x=0; x<config.size; x++)
+      if (maze[y][x]===0) cells.push({x,y});
+  return cells;
+}
+
+function placeFeaturesOnPath() {
+  const path = bfsPath(player, exit);
+  if (!path) return;
+
+  // Rule zones: evenly spaced along main path
+  ruleZones = [];
+  const step = Math.floor(path.length / (config.ruleChanges + 1));
+  const usedRules = [0];
+  for (let i = 1; i <= config.ruleChanges; i++) {
+    const pos = path[i * step];
+    const available = RULES.map((_,idx) => idx).filter(idx => idx !== usedRules[usedRules.length-1]);
+    const ruleIdx = available[Math.floor(Math.random() * available.length)];
+    usedRules.push(ruleIdx);
+    ruleZones.push({ x: pos.x, y: pos.y, ruleIdx, triggered: false });
+  }
+
+  // Build set of main-path cells to exclude from gems
+  const pathSet = new Set(path.map(p => `${p.x},${p.y}`));
+  pathSet.add(`${player.x},${player.y}`);
+  pathSet.add(`${exit.x},${exit.y}`);
+  ruleZones.forEach(r => pathSet.add(`${r.x},${r.y}`));
+
+  // Build full reachable set via flood-fill BFS
+  const reachable = new Set();
+  const q = [{x: player.x, y: player.y}];
+  reachable.add(`${player.x},${player.y}`);
+  while (q.length) {
+    const cur = q.shift();
+    for (const {dx,dy} of [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}]) {
+      const nx=cur.x+dx, ny=cur.y+dy;
+      const k=`${nx},${ny}`;
+      if (nx>=0&&ny>=0&&nx<config.size&&ny<config.size&&maze[ny][nx]===0&&!reachable.has(k)) {
+        reachable.add(k);
+        q.push({x:nx,y:ny});
+      }
+    }
+  }
+
+  // Prefer off-path reachable cells for gems (side corridors)
+  const toCell = k => { const [x,y]=k.split(',').map(Number); return {x,y}; };
+  const offPath = [...reachable].filter(k => !pathSet.has(k)).map(toCell);
+  const pool = offPath.length >= config.gemCount
+    ? offPath
+    : [...reachable].map(toCell).filter(c => !(`${c.x},${c.y}` === `${player.x},${player.y}`) && !(`${c.x},${c.y}` === `${exit.x},${exit.y}`));
+
+  gems = shuffle(pool).slice(0, config.gemCount).map(c => ({...c, collected: false}));
+}
+
+function bfsPath(start, end) {
+  const key = c=>`${c.x},${c.y}`;
+  const visited = new Set([key(start)]);
+  const queue = [{...start, path:[start]}];
+  while (queue.length) {
+    const cur = queue.shift();
+    if (cur.x===end.x && cur.y===end.y) return cur.path;
+    for (const {dx,dy} of [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}]) {
+      const nx=cur.x+dx, ny=cur.y+dy;
+      if (nx>=0&&ny>=0&&nx<config.size&&ny<config.size&&maze[ny][nx]===0&&!visited.has(`${nx},${ny}`)) {
+        visited.add(`${nx},${ny}`);
+        queue.push({x:nx,y:ny,path:[...cur.path,{x:nx,y:ny}]});
+      }
+    }
+  }
+  return null;
+}
+
+// ════════════════════════════════════════
+//  INIT GAME
+// ════════════════════════════════════════
+function initGame() {
+  config = LEVELS[levelKey];
+  maze = generateMaze(config.size);
+
+  player = {x:1, y:1};
+  exit   = {x: config.size-2, y: config.size-2};
+  maze[exit.y][exit.x] = 0;
+
+  currentRule = 0;
+  steps = 0; gemsCollected = 0; rulesTriggered = 0;
+  // Only reset errors/mazes on fresh start (not on next maze in endless)
+  if (!config.endless || mazesCompleted === 0) { wallErrors = 0; mazesCompleted = 0; }
+  gameRunning = true;
+
+  placeFeaturesOnPath();
+
+  document.getElementById('level-label').textContent = config.name;
+
+  // HUD last box: lives in endless, timer otherwise
+  const livesBox = document.getElementById('hud-lives-box');
+  const livesEl  = document.getElementById('hud-lives');
+  if (config.endless) {
+    livesBox.querySelector('.hud-lbl').textContent = '❤️ Vies restantes';
+    livesEl.className = 'hud-val hearts';
+    updateLivesDisplay();
+  } else {
+    livesBox.querySelector('.hud-lbl').textContent = '⏱ Temps';
+    livesEl.className = 'hud-val';
+    livesEl.style.fontSize = '1.3rem';
+    livesEl.textContent = '0s';
+  }
+
+  updateHUD();
+  updateRuleBanner();
+
+  // Timer
+  startTime = Date.now();
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    const s = Math.floor((Date.now()-startTime)/1000);
+    if (!config.endless) document.getElementById('hud-lives').textContent = s+'s';
+  }, 500);
+
+  showScreen('screen-game');
+  drawMaze();
+}
+
+// ════════════════════════════════════════
+//  MOVEMENT
+// ════════════════════════════════════════
+function move(dir) {
+  if (!gameRunning) return;
+
+  // Apply rule mapping
+  const mapped = RULES[currentRule].map[dir];
+  const deltas = { up:{dx:0,dy:-1}, down:{dx:0,dy:1}, left:{dx:-1,dy:0}, right:{dx:1,dy:0} };
+  const {dx, dy} = deltas[mapped];
+  const nx = player.x + dx, ny = player.y + dy;
+
+  if (nx<0||ny<0||nx>=config.size||ny>=config.size || maze[ny][nx]===1) {
+    flashBtn(dir);
+    if (config.endless) {
+      wallErrors++;
+      updateLivesDisplay();
+      const remaining = config.maxErrors - wallErrors;
+      if (remaining > 0) showToast(`💥 Erreur ! ${remaining} vie${remaining>1?'s':''} restante${remaining>1?'s':''}`, 1800);
+      if (wallErrors >= config.maxErrors) { endGame(true); return; }
+    }
+    return;
+  }
+
+  player.x = nx; player.y = ny;
+  steps++;
+
+  // Check rule zone
+  const zone = ruleZones.find(r=>r.x===nx&&r.y===ny&&!r.triggered);
+  if (zone) {
+    zone.triggered = true;
+    currentRule = zone.ruleIdx;
+    rulesTriggered++;
+    updateRuleBanner(true);
+    showToast('⚡ Règle changée : '+RULES[currentRule].label, 2500);
+  }
+
+  // Check gem
+  const gem = gems.find(g=>g.x===nx&&g.y===ny&&!g.collected);
+  if (gem) { gem.collected=true; gemsCollected++; showToast('💎 Gemme récoltée !', 1200); }
+
+  updateHUD();
+  drawMaze();
+
+  // Check exit
+  if (nx===exit.x && ny===exit.y) {
+    if (config.endless) {
+      mazesCompleted++;
+      showToast(`🏆 Donjon ${mazesCompleted} vaincu ! Prochain niveau…`, 2000);
+      setTimeout(() => nextEndlessMaze(), 2000);
+    } else {
+      endGame(false);
+    }
+  }
+}
+
+function updateLivesDisplay() {
+  if (!config.endless) return;
+  const remaining = Math.max(0, config.maxErrors - wallErrors);
+  const el = document.getElementById('hud-lives');
+  el.textContent = '❤️'.repeat(remaining) + '🖤'.repeat(config.maxErrors - remaining);
+}
+
+function nextEndlessMaze() {
+  // Progressive difficulty: each completed maze increases challenge
+  // Round 1: 2 changes, Round 2: 3, Round 3+: 4-5, maze grows at round 3
+  const round = mazesCompleted; // already incremented when this is called
+  const newRuleChanges = Math.min(5, 2 + Math.floor(round * 0.8));
+  const newSize = round >= 3 ? 13 : 11; // maze expands after 3 rounds
+  const newGems = Math.min(10, 6 + round);
+  const newMaxErrors = Math.max(2, 5 - Math.floor(round / 3)); // fewer lives over time
+
+  config = {
+    ...LEVELS.endless,
+    size: newSize,
+    ruleChanges: newRuleChanges,
+    gemCount: newGems,
+    maxErrors: newMaxErrors,
+  };
+
+  maze = generateMaze(config.size);
+  player = {x:1, y:1};
+  exit   = {x: config.size-2, y: config.size-2};
+  maze[exit.y][exit.x] = 0;
+  currentRule = 0;
+
+  placeFeaturesOnPath();
+  updateRuleBanner();
+  updateHUD();
+  drawMaze();
+
+  // Show difficulty change info
+  showToast(`🔥 Donjon ${round} — ${newRuleChanges} règles, ${newMaxErrors} vies`, 2500);
+}
+
+function flashBtn(dir) {
+  const map = { up:'btn-up', down:'btn-down', left:'btn-left', right:'btn-right' };
+  const btn = document.getElementById(map[dir]);
+  if (!btn) return;
+  btn.classList.add('pressed');
+  setTimeout(()=>btn.classList.remove('pressed'),150);
+}
+
+function drawMaze() {
+  const canvas = document.getElementById('maze-canvas');
+  const size = config.size;
+  const C = Math.min(CELL, Math.floor((window.innerWidth - 40) / size));
+  canvas.width  = size * C;
+  canvas.height = size * C;
+  const ctx = canvas.getContext('2d');
+
+  // Draw floor pass first
+  ctx.fillStyle = '#2a2744';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  for (let y=0; y<size; y++) {
+    for (let x=0; x<size; x++) {
+      const px=x*C, py=y*C;
+      if (maze[y][x]===1) {
+        // === THICK WALL — high contrast 3D stone block ===
+        // Main stone face
+        ctx.fillStyle = '#3a3060';
+        ctx.fillRect(px, py, C, C);
+        // Top highlight (light edge)
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        ctx.fillRect(px, py, C, 4);
+        ctx.fillRect(px, py, 4, C);
+        // Bottom shadow (dark edge)
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        ctx.fillRect(px, py+C-4, C, 4);
+        ctx.fillRect(px+C-4, py, 4, C);
+        // Inner stone texture
+        ctx.fillStyle = 'rgba(80,60,120,0.4)';
+        ctx.fillRect(px+4, py+4, C-8, C-8);
+        // Gold mortar border
+        ctx.strokeStyle = 'rgba(240,192,64,0.25)';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(px+0.75, py+0.75, C-1.5, C-1.5);
+      } else {
+        // Floor — darker, subtle grid
+        ctx.fillStyle = '#1c1a2e';
+        ctx.fillRect(px, py, C, C);
+        ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(px+0.5, py+0.5, C-1, C-1);
+      }
+    }
+  }
+
+  // Exit
+  {
+    const px=exit.x*C, py=exit.y*C;
+    const grd = ctx.createRadialGradient(px+C/2,py+C/2,2,px+C/2,py+C/2,C);
+    grd.addColorStop(0,'rgba(240,192,64,0.9)');
+    grd.addColorStop(1,'rgba(240,192,64,0.1)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(px,py,C,C);
+    ctx.font = `${Math.round(C*0.6)}px serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('🚪',px+C/2,py+C/2+1);
+  }
+
+  // Rule zones
+  ruleZones.forEach(r=>{
+    if (r.triggered) return;
+    const px=r.x*C, py=r.y*C;
+    const rule = RULES[r.ruleIdx];
+    const colors = {'rule-fire':'rgba(232,98,42,0.3)','rule-ice':'rgba(126,207,234,0.3)','rule-poison':'rgba(109,220,122,0.3)','rule-magic':'rgba(192,132,252,0.3)'};
+    ctx.fillStyle = colors[rule.theme] || 'rgba(255,255,255,0.1)';
+    ctx.fillRect(px,py,C,C);
+    ctx.font = `${Math.round(C*0.55)}px serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(rule.icon, px+C/2, py+C/2+1);
+  });
+
+  // Gems
+  gems.forEach(g=>{
+    if (g.collected) return;
+    const px=g.x*C, py=g.y*C;
+    ctx.font=`${Math.round(C*0.55)}px serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('💎',px+C/2,py+C/2+1);
+  });
+
+  // Player glow + sprite
+  {
+    const px=player.x*C, py=player.y*C;
+    const grd2 = ctx.createRadialGradient(px+C/2,py+C/2,2,px+C/2,py+C/2,C*0.7);
+    grd2.addColorStop(0,'rgba(240,192,64,0.4)');
+    grd2.addColorStop(1,'transparent');
+    ctx.fillStyle=grd2;
+    ctx.fillRect(px,py,C,C);
+    ctx.font=`${Math.round(C*0.65)}px serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('🧙',px+C/2,py+C/2+1);
+  }
+}
+
+// ════════════════════════════════════════
+//  HUD & RULE BANNER
+// ════════════════════════════════════════
+function updateHUD() {
+  document.getElementById('hud-gold').textContent  = gemsCollected;
+  document.getElementById('hud-steps').textContent = steps;
+  document.getElementById('hud-rules').textContent = rulesTriggered;
+  if (config.endless) updateLivesDisplay();
+}
+
+function updateRuleBanner(animated=false) {
+  const rule = RULES[currentRule];
+  const banner = document.getElementById('rule-banner');
+  banner.className = 'rule-banner ' + rule.theme;
+  document.getElementById('rule-icon').textContent = rule.icon;
+  document.getElementById('rule-text').textContent = rule.label;
+  if (animated) {
+    banner.classList.remove('rule-change-flash');
+    void banner.offsetWidth;
+    banner.classList.add('rule-change-flash');
+  }
+}
+
+// ════════════════════════════════════════
+//  KEYBOARD
+// ════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  const map = { ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right',
+                w:'up', s:'down', a:'left', d:'right' };
+  if (map[e.key] && document.getElementById('screen-game').classList.contains('active')) {
+    e.preventDefault();
+    move(map[e.key]);
+    flashBtn(map[e.key]);
+  }
+});
+
+// ════════════════════════════════════════
+//  END GAME
+// ════════════════════════════════════════
+function endGame(gameOver=false) {
+  gameRunning = false;
+  clearInterval(timerInterval);
+  const elapsed = Math.floor((Date.now()-startTime)/1000);
+
+  let score, badge, title, msg, cls;
+
+  if (config.endless) {
+    // Endless scoring: dungeons cleared + gems - errors
+    score = mazesCompleted * 500 + gemsCollected * 100 + rulesTriggered * 150 - wallErrors * 80;
+    score = Math.max(0, score);
+
+    document.getElementById('res-gold').textContent  = gemsCollected;
+    document.getElementById('res-steps').textContent = steps;
+    document.getElementById('res-rules').textContent = rulesTriggered;
+    document.getElementById('res-time').textContent  = elapsed + 's';
+    document.getElementById('res-score').textContent = score;
+
+    // Replace one stat with dungeons cleared
+    document.querySelector('.stat-time .stat-lbl').textContent = '🏰 Donjons franchis';
+    document.querySelector('.stat-time .stat-val').textContent = mazesCompleted;
+    document.querySelector('.stat-time .stat-val').style.color = 'var(--gold)';
+
+    if (mazesCompleted >= 5)      { badge='👑'; title='Légende Éternelle !';   cls='perf-s'; msg='🌟 Incroyable ! Tu es un vrai Maître du Donjon. Ta flexibilité cognitive est hors normes !'; }
+    else if (mazesCompleted >= 3) { badge='🔱'; title='Maître du Donjon !';    cls='perf-a'; msg='⚔️ Excellent ! Tu as traversé plusieurs donjons avec brio. L\'entraînement porte ses fruits !'; }
+    else if (mazesCompleted >= 1) { badge='🏆'; title='Aventurier Coriace !'; cls='perf-b'; msg='🌿 Bien joué ! Tu as réussi à traverser un donjon. Continue à t\'entraîner !'; }
+    else                          { badge='💀'; title='Le Donjon t\'a vaincu !';cls='perf-c'; msg='🔮 Pas facile le mode Maître ! Entraîne-toi sur les autres niveaux d\'abord.'; }
+
+  } else {
+    // Standard scoring
+    const baseScore   = 1000;
+    const stepPenalty = steps * 5;
+    const timePenalty = elapsed * 2;
+    const gemBonus    = gemsCollected * 150;
+    const ruleBonus   = rulesTriggered * 200;
+    score = Math.max(0, baseScore - stepPenalty - timePenalty + gemBonus + ruleBonus);
+
+    document.getElementById('res-gold').textContent  = gemsCollected + ' / ' + config.gemCount;
+    document.getElementById('res-steps').textContent = steps;
+    document.getElementById('res-rules').textContent = rulesTriggered;
+    document.getElementById('res-time').textContent  = elapsed + 's';
+    document.getElementById('res-score').textContent = score;
+
+    // Reset stat labels in case endless changed them
+    document.querySelector('.stat-time .stat-lbl').textContent = '⏱ Temps total';
+    document.querySelector('.stat-time .stat-val').style.color = 'var(--ember)';
+
+    const pct = score / (baseScore + gemBonus + ruleBonus);
+    if (pct > 0.75)      { badge='🏆'; title='Sorcier Suprême !';    cls='perf-s'; msg='✨ Extraordinaire ! Tu maîtrises les règles changeantes avec une agilité mentale exceptionnelle.'; }
+    else if (pct > 0.5)  { badge='🥈'; title='Chevalier Agile !';    cls='perf-a'; msg='⚔️ Beau parcours ! Ta flexibilité cognitive est bien développée. Continue l\'entraînement !'; }
+    else if (pct > 0.3)  { badge='🥉'; title='Apprenti Courageux !'; cls='perf-b'; msg='🌿 Bon effort ! Les changements de règles sont difficiles au début. Tu progresseras vite !'; }
+    else                 { badge='🎮'; title='Le Donjon résiste !';   cls='perf-c'; msg='🔮 Ce donjon est coriace ! Rejoue pour t\'habituer aux changements de règles.'; }
+  }
+
+  document.getElementById('result-badge').textContent  = badge;
+  document.getElementById('result-title').textContent  = title;
+  const pm = document.getElementById('perf-msg');
+  pm.textContent = msg; pm.className = 'perf-msg ' + cls;
+
+  setTimeout(()=>showScreen('screen-results'), gameOver ? 800 : 500);
+}
+
+function confirmRestart() {
+  if (confirm('Recommencer ce niveau ?')) startCountdown();
+}
+
+// Redraw on resize
+window.addEventListener('resize', ()=>{ if(gameRunning) drawMaze(); });
+</script>
+</body>
+</html>

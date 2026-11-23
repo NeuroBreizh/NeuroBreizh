@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ma Journée — Jeu de Planification</title>
+<link rel="stylesheet" href="../../assets/fonts/ma-journee.css">
+<style>
+:root {
+  --bg:      #f5f2ed;
+  --bg2:     #ebe6de;
+  --card:    #ffffff;
+  --ink:     #1a1612;
+  --ink2:    #4a4540;
+  --muted:   #9a9088;
+  --accent:  #e8622a;
+  --accent2: #f5a623;
+  --blue:    #2e6fda;
+  --green:   #2a9d5c;
+  --red:     #d63c3c;
+  --purple:  #7c3aed;
+  --yellow:  #f5c518;
+  --border:  rgba(26,22,18,.1);
+  --shadow:  0 2px 12px rgba(26,22,18,.08);
+  --r:       14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  background:var(--bg);
+  font-family:'DM Sans',sans-serif;
+  color:var(--ink);
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;
+  padding:14px;overflow-x:hidden;
+}
+
+/* Grid paper texture */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(26,22,18,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(26,22,18,.04) 1px,transparent 1px);
+  background-size:28px 28px;
+  pointer-events:none;z-index:0;
+}
+
+.wrapper{position:relative;z-index:1;width:100%;max-width:660px;display:flex;flex-direction:column;align-items:center;gap:14px;}
+
+/* ── SCREENS ── */
+.screen{display:none;flex-direction:column;align-items:center;gap:14px;width:100%;}
+.screen.active{display:flex;}
+
+/* ── TITLES ── */
+.game-title{
+  font-family:'DM Sans',sans-serif;font-weight:800;
+  font-size:clamp(1.8rem,6vw,2.8rem);text-align:center;
+  color:var(--ink);letter-spacing:-1px;
+  position:relative;
+}
+.game-title span{color:var(--accent);}
+.subtitle{font-size:.88rem;color:var(--muted);text-align:center;}
+.sub-title{font-weight:700;font-size:1rem;color:var(--ink2);}
+
+/* ── CARD ── */
+.card{
+  background:var(--card);border-radius:var(--r);
+  padding:18px 20px;width:100%;
+  box-shadow:var(--shadow);border:1px solid var(--border);
+}
+
+/* ── LEVEL CARDS ── */
+.lvl-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%;}
+@media(max-width:400px){.lvl-grid{grid-template-columns:repeat(2,1fr);}}
+.lvl-card{
+  background:var(--card);border:2px solid var(--border);border-radius:12px;
+  padding:12px 6px;cursor:pointer;text-align:center;transition:all .18s;
+}
+.lvl-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 4px 12px rgba(232,98,42,.15);}
+.lvl-card.selected{border-color:var(--accent);background:rgba(232,98,42,.05);}
+.lvl-icon{font-size:1.6rem;display:block;margin-bottom:4px;}
+.lvl-name{font-weight:700;font-size:.7rem;color:var(--ink);}
+.lvl-desc{font-size:.6rem;color:var(--muted);margin-top:3px;line-height:1.3;}
+
+/* ── MODE CARDS ── */
+.mode-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;}
+.mode-card{
+  background:var(--card);border:2px solid var(--border);border-radius:12px;
+  padding:14px 8px;cursor:pointer;text-align:center;transition:all .18s;
+}
+.mode-card:hover{border-color:var(--blue);transform:translateY(-2px);}
+.mode-card.selected{border-color:var(--accent);background:rgba(232,98,42,.04);}
+.mode-icon{font-size:1.8rem;display:block;margin-bottom:5px;}
+.mode-name{font-weight:700;font-size:.75rem;color:var(--ink);}
+.mode-desc{font-size:.65rem;color:var(--muted);margin-top:3px;line-height:1.3;}
+
+/* ── HUD ── */
+.hud{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%;}
+.hud3{grid-template-columns:repeat(3,1fr);}
+.hud-box{background:var(--card);border-radius:10px;padding:8px 5px;text-align:center;box-shadow:var(--shadow);border:1px solid var(--border);}
+.hud-val{font-family:'DM Mono',monospace;font-size:1.2rem;line-height:1;font-weight:500;}
+.hud-lbl{font-size:.56rem;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:2px;}
+.hud-score .hud-val{color:var(--accent);}
+.hud-level .hud-val{color:var(--blue);}
+.hud-streak .hud-val{color:var(--green);}
+.hud-lives .hud-val{color:var(--red);}
+
+/* ── PROGRESS ── */
+.prog-wrap{width:100%;height:7px;background:var(--bg2);border-radius:20px;overflow:hidden;}
+.prog-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:20px;transition:width .4s;}
+
+/* ══════════════════════════════════════
+   MODE 1 — PLANNING (drag schedule)
+══════════════════════════════════════ */
+.planning-scenario{
+  background:var(--card);border-radius:var(--r);padding:16px 18px;width:100%;
+  border-left:4px solid var(--accent);box-shadow:var(--shadow);
+}
+.scenario-title{font-weight:800;font-size:.95rem;margin-bottom:4px;}
+.scenario-desc{font-size:.82rem;color:var(--ink2);line-height:1.4;}
+.scenario-constraints{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;}
+.constraint-tag{
+  font-size:.7rem;font-weight:600;padding:3px 9px;border-radius:20px;
+  background:rgba(232,98,42,.1);color:var(--accent);border:1px solid rgba(232,98,42,.2);
+}
+
+/* Timeline */
+.timeline{width:100%;display:flex;flex-direction:column;gap:4px;}
+.time-slot{
+  display:flex;align-items:center;gap:10px;
+  background:var(--bg);border-radius:10px;padding:8px 12px;
+  border:2px dashed var(--border);min-height:52px;
+  transition:all .2s;position:relative;
+}
+.time-slot.has-task{border-style:solid;border-color:var(--border);background:var(--card);}
+.time-slot.drag-over{border-color:var(--accent);background:rgba(232,98,42,.06);}
+.slot-time{font-family:'DM Mono',monospace;font-size:.75rem;color:var(--muted);font-weight:500;width:42px;flex-shrink:0;}
+.slot-content{flex:1;min-height:32px;display:flex;align-items:center;}
+.slot-empty{font-size:.75rem;color:var(--muted);font-style:italic;}
+
+/* Task chips */
+.task-chips{display:flex;flex-wrap:wrap;gap:8px;width:100%;}
+.task-chip{
+  display:flex;align-items:center;gap:6px;
+  padding:8px 12px;border-radius:10px;border:2px solid var(--border);
+  background:var(--card);cursor:grab;font-size:.82rem;font-weight:600;
+  box-shadow:var(--shadow);transition:all .15s;user-select:none;
+}
+.task-chip:active{cursor:grabbing;transform:scale(.97);box-shadow:0 4px 16px rgba(0,0,0,.12);}
+.task-chip.placed{opacity:.4;pointer-events:none;}
+.task-chip.dragging{opacity:.5;transform:scale(.95);}
+.chip-icon{font-size:1.1rem;}
+.chip-dur{font-size:.65rem;color:var(--muted);font-weight:400;font-family:'DM Mono',monospace;}
+
+/* ══════════════════════════════════════
+   MODE 2 — STEPS (sequence ordering)
+══════════════════════════════════════ */
+.steps-target{
+  background:var(--card);border-radius:var(--r);padding:14px 16px;width:100%;
+  border-left:4px solid var(--blue);box-shadow:var(--shadow);
+}
+.steps-title{font-weight:800;font-size:.95rem;margin-bottom:6px;}
+.drop-list{display:flex;flex-direction:column;gap:6px;min-height:40px;}
+.drop-slot{
+  background:var(--bg);border-radius:10px;padding:9px 12px;
+  border:2px dashed var(--border);min-height:44px;
+  display:flex;align-items:center;gap:8px;
+  transition:all .2s;font-size:.82rem;color:var(--muted);font-style:italic;
+}
+.drop-slot.has-item{border-style:solid;border-color:var(--border);background:var(--card);color:var(--ink);font-style:normal;font-weight:600;}
+.drop-slot.drag-over{border-color:var(--blue);background:rgba(46,111,218,.06);}
+.drop-slot.correct{border-color:var(--green);background:rgba(42,157,92,.08);}
+.drop-slot.wrong{border-color:var(--red);background:rgba(214,60,60,.08);}
+.step-num{font-family:'DM Mono',monospace;font-size:.7rem;color:var(--muted);font-weight:500;width:22px;flex-shrink:0;}
+.step-items{display:flex;flex-wrap:wrap;gap:8px;width:100%;}
+.step-chip{
+  display:flex;align-items:center;gap:6px;padding:9px 13px;border-radius:10px;
+  border:2px solid var(--border);background:var(--card);
+  cursor:grab;font-size:.82rem;font-weight:600;box-shadow:var(--shadow);
+  transition:all .15s;user-select:none;
+}
+.step-chip:active{cursor:grabbing;}
+.step-chip.used{opacity:.35;pointer-events:none;}
+.step-chip.dragging{opacity:.5;}
+
+/* ══════════════════════════════════════
+   MODE 3 — CONSEQUENCES (choice tree)
+══════════════════════════════════════ */
+.conseq-scene{
+  background:var(--card);border-radius:var(--r);padding:16px 18px;width:100%;
+  box-shadow:var(--shadow);border-left:4px solid var(--purple);
+}
+.conseq-situation{font-weight:800;font-size:.95rem;margin-bottom:6px;line-height:1.4;}
+.conseq-context{font-size:.82rem;color:var(--ink2);line-height:1.45;margin-bottom:12px;}
+.choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;}
+.choice-btn{
+  background:var(--card);border:2px solid var(--border);border-radius:12px;
+  padding:13px 12px;cursor:pointer;text-align:left;
+  transition:all .15s;box-shadow:var(--shadow);
+}
+.choice-btn:hover{border-color:var(--purple);transform:translateY(-1px);box-shadow:0 4px 14px rgba(124,58,237,.12);}
+.choice-btn:active{transform:scale(.98);}
+.choice-btn.selected-ok{border-color:var(--green);background:rgba(42,157,92,.07);}
+.choice-btn.selected-ko{border-color:var(--red);background:rgba(214,60,60,.07);}
+.choice-btn.reveal-ok{border-color:var(--green);background:rgba(42,157,92,.07);}
+.choice-label{font-weight:700;font-size:.82rem;margin-bottom:4px;}
+.choice-icon{font-size:1.3rem;margin-bottom:4px;display:block;}
+.choice-consequence{
+  font-size:.72rem;color:var(--muted);line-height:1.3;margin-top:6px;
+  font-style:italic;display:none;
+}
+.choice-consequence.show{display:block;}
+.choice-consequence.good{color:var(--green);}
+.choice-consequence.bad{color:var(--red);}
+.chain-indicator{
+  display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--muted);
+  background:var(--bg);border-radius:8px;padding:6px 10px;
+  font-family:'DM Mono',monospace;
+}
+
+/* ── CONFIRM BUTTON ── */
+.confirm-wrap{display:flex;justify-content:center;width:100%;}
+
+/* ── BUTTONS ── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:12px 24px;border-radius:50px;border:none;
+  font-family:'DM Sans',sans-serif;font-weight:700;font-size:.9rem;
+  cursor:pointer;transition:transform .15s,box-shadow .15s;
+}
+.btn:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.12);}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 4px 14px rgba(232,98,42,.3);}
+.btn-blue{background:var(--blue);color:#fff;box-shadow:0 4px 14px rgba(46,111,218,.3);}
+.btn-outline{background:transparent;border:2px solid var(--border);color:var(--ink2);}
+.btn-sm{padding:8px 18px;font-size:.8rem;}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+
+/* ── FEEDBACK ── */
+.feedback-panel{
+  background:var(--card);border-radius:var(--r);padding:14px 16px;width:100%;
+  box-shadow:var(--shadow);border:1px solid var(--border);
+  font-size:.85rem;line-height:1.5;display:none;
+}
+.feedback-panel.show{display:block;}
+.feedback-panel.ok{border-color:var(--green);background:rgba(42,157,92,.06);}
+.feedback-panel.ko{border-color:var(--red);background:rgba(214,60,60,.06);}
+.feedback-title{font-weight:800;margin-bottom:4px;}
+
+/* ── COUNTDOWN ── */
+.cdown{font-weight:800;font-size:5rem;color:var(--accent);animation:cPop .7s cubic-bezier(.175,.885,.32,1.275);}
+@keyframes cPop{0%{transform:scale(2);opacity:0;}100%{transform:scale(1);opacity:1;}}
+
+/* ── RESULTS ── */
+.res-badge{font-size:4rem;text-align:center;animation:popIn .5s cubic-bezier(.175,.885,.32,1.275);}
+@keyframes popIn{0%{transform:scale(0);}100%{transform:scale(1);}}
+.res-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;}
+.res-item{background:var(--card);border-radius:12px;padding:13px;text-align:center;box-shadow:var(--shadow);border:1px solid var(--border);}
+.res-val{font-family:'DM Mono',monospace;font-size:1.5rem;font-weight:500;}
+.res-lbl{font-size:.65rem;color:var(--muted);margin-top:2px;}
+.perf-msg{font-size:.88rem;font-weight:600;text-align:center;padding:13px 18px;border-radius:12px;width:100%;}
+.perf-s{background:rgba(42,157,92,.08);color:var(--green);border:1px solid rgba(42,157,92,.25);}
+.perf-a{background:rgba(232,98,42,.08);color:var(--accent);border:1px solid rgba(232,98,42,.25);}
+.perf-b{background:rgba(46,111,218,.08);color:var(--blue);border:1px solid rgba(46,111,218,.25);}
+.perf-c{background:rgba(214,60,60,.08);color:var(--red);border:1px solid rgba(214,60,60,.25);}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);padding:9px 22px;border-radius:50px;font-weight:700;font-size:.82rem;box-shadow:0 4px 16px rgba(0,0,0,.12);opacity:0;transition:opacity .25s;pointer-events:none;z-index:200;white-space:nowrap;border:1px solid transparent;}
+#toast.show{opacity:1;}
+#toast.ok{background:rgba(42,157,92,.1);border-color:var(--green);color:var(--green);}
+#toast.ko{background:rgba(214,60,60,.1);border-color:var(--red);color:var(--red);}
+#toast.info{background:rgba(46,111,218,.1);border-color:var(--blue);color:var(--blue);}
+
+/* ── QUIT MODAL ── */
+#quit-modal{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;display:none;align-items:center;justify-content:center;}
+#quit-modal.open{display:flex;}
+.quit-box{background:var(--card);border-radius:20px;padding:28px;text-align:center;max-width:280px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,.15);}
+.quit-box p{font-weight:700;font-size:.95rem;color:var(--ink);margin-bottom:18px;line-height:1.5;}
+
+/* mode badge */
+.mode-badge{
+  display:inline-flex;align-items:center;gap:5px;font-size:.68rem;font-weight:700;
+  padding:3px 10px;border-radius:20px;letter-spacing:.3px;
+}
+.mode-badge-plan{background:rgba(232,98,42,.12);color:var(--accent);}
+.mode-badge-steps{background:rgba(46,111,218,.12);color:var(--blue);}
+.mode-badge-conseq{background:rgba(124,58,237,.12);color:var(--purple);}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<div id="quit-modal">
+  <div class="quit-box">
+    <p>Quitter cette partie ?<br><span style="color:var(--muted);font-size:.82rem;">Ta progression sera perdue.</span></p>
+    <div class="btn-row">
+      <button class="btn btn-sm" style="background:var(--red);color:#fff;" onclick="doQuit()">Quitter</button>
+      <button class="btn btn-outline btn-sm" onclick="closeQuit()">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrapper">
+
+<!-- ══ HOME ══ -->
+<div class="screen active" id="s-home">
+  <div style="text-align:center;padding-top:6px;">
+    <div style="font-size:2.8rem;margin-bottom:8px;">🗓️</div>
+    <div class="game-title">Ma <span>Journée</span></div>
+    <div class="subtitle">Jeu de planification — anticiper, organiser, décider</div>
+  </div>
+
+  <div class="mode-grid">
+    <div class="mode-card selected" id="mc-plan" onclick="selectMode('plan',this)">
+      <span class="mode-icon">📅</span>
+      <div class="mode-name">Planning</div>
+      <div class="mode-desc">Organise ta journée en respectant les contraintes de temps</div>
+    </div>
+    <div class="mode-card" id="mc-steps" onclick="selectMode('steps',this)">
+      <span class="mode-icon">🔢</span>
+      <div class="mode-name">Étapes</div>
+      <div class="mode-desc">Remets les étapes d'une tâche dans le bon ordre</div>
+    </div>
+    <div class="mode-card" id="mc-conseq" onclick="selectMode('conseq',this)">
+      <span class="mode-icon">🔮</span>
+      <div class="mode-name">Conséquences</div>
+      <div class="mode-desc">Anticipe ce qui va se passer selon tes choix</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Difficulté</div>
+    <div class="lvl-grid">
+      <div class="lvl-card selected" onclick="selectLevel(this,'easy')">
+        <span class="lvl-icon">☀️</span>
+        <div class="lvl-name">Facile</div>
+        <div class="lvl-desc">Situations simples, peu de contraintes</div>
+      </div>
+      <div class="lvl-card" onclick="selectLevel(this,'medium')">
+        <span class="lvl-icon">🌤️</span>
+        <div class="lvl-name">Moyen</div>
+        <div class="lvl-desc">Plus d'étapes, contraintes variées</div>
+      </div>
+      <div class="lvl-card" onclick="selectLevel(this,'hard')">
+        <span class="lvl-icon">⛈️</span>
+        <div class="lvl-name">Difficile</div>
+        <div class="lvl-desc">Situations complexes, pièges</div>
+      </div>
+      <div class="lvl-card" onclick="selectLevel(this,'endless')">
+        <span class="lvl-icon">♾️</span>
+        <div class="lvl-name">Infini</div>
+        <div class="lvl-desc">3 erreurs = fin, difficulté croissante</div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" onclick="launchGame()">🗓️ Commencer la journée !</button>
+</div>
+
+<!-- ══ COUNTDOWN ══ -->
+<div class="screen" id="s-countdown">
+  <div style="font-size:2.5rem;margin-bottom:4px;" id="cd-icon">🗓️</div>
+  <div class="cdown" id="cd-num">3</div>
+  <div class="subtitle" id="cd-msg">Prépare ton cerveau !</div>
+</div>
+
+<!-- ══ GAME ══ -->
+<div class="screen" id="s-game">
+  <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+    <div class="sub-title" style="font-size:.9rem;" id="game-mode-label">📅 Planning</div>
+    <div id="mode-badge-el"></div>
+  </div>
+  <div class="hud">
+    <div class="hud-box hud-score"><div class="hud-val" id="hud-score">0</div><div class="hud-lbl">Score</div></div>
+    <div class="hud-box hud-level"><div class="hud-val" id="hud-q">1/8</div><div class="hud-lbl">Question</div></div>
+    <div class="hud-box hud-streak"><div class="hud-val" id="hud-streak">0</div><div class="hud-lbl">Série 🔥</div></div>
+    <div class="hud-box hud-lives"><div class="hud-val" id="hud-lives">∞</div><div class="hud-lbl">Vies</div></div>
+  </div>
+  <div class="prog-wrap"><div class="prog-bar" id="prog-bar" style="width:0%"></div></div>
+
+  <!-- Dynamic question area -->
+  <div id="question-area" style="width:100%;display:flex;flex-direction:column;gap:12px;"></div>
+
+  <div class="feedback-panel" id="feedback-panel">
+    <div class="feedback-title" id="feedback-title"></div>
+    <div id="feedback-body"></div>
+  </div>
+
+  <div class="confirm-wrap" id="confirm-wrap" style="display:none;">
+    <button class="btn btn-blue" onclick="confirmAnswer()">✓ Valider ma réponse</button>
+  </div>
+
+  <button class="btn btn-outline btn-sm" onclick="openQuit()">← Quitter</button>
+</div>
+
+<!-- ══ RESULTS ══ -->
+<div class="screen" id="s-results">
+  <div class="res-badge" id="res-badge">🏆</div>
+  <div class="game-title" style="font-size:1.5rem;" id="res-title">Journée réussie !</div>
+  <div class="res-grid">
+    <div class="res-item"><div class="res-val" id="res-score" style="color:var(--accent)">0</div><div class="res-lbl">⭐ Score</div></div>
+    <div class="res-item"><div class="res-val" id="res-correct" style="color:var(--green)">—</div><div class="res-lbl">✅ Réponses justes</div></div>
+    <div class="res-item"><div class="res-val" id="res-errors" style="color:var(--red)">—</div><div class="res-lbl">❌ Erreurs</div></div>
+    <div class="res-item"><div class="res-val" id="res-best" style="color:var(--blue)">0</div><div class="res-lbl">🔥 Meilleure série</div></div>
+  </div>
+  <div class="perf-msg" id="res-perf"></div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="replayGame()">↺ Rejouer</button>
+    <button class="btn btn-outline btn-sm" onclick="showScreen('s-home')">🏠 Menu</button>
+  </div>
+</div>
+
+</div><!-- /wrapper -->
+<script>
+'use strict';
+// ══════════════════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════════════════
+
+// ── MODE 1: PLANNING scenarios ──
+const PLANNING_SCENARIOS = [
+  {
+    title:"Matin chargé 🌅",
+    desc:"Tu te lèves à 7h. Tu dois partir à 8h30 pour attraper ton bus.",
+    slots:["7h00","7h20","7h40","8h00","8h20"],
+    tasks:[
+      {id:'pdj',icon:'🥣',label:'Petit-déjeuner',dur:20,tags:['avant habillage possible']},
+      {id:'dch',icon:'🚿',label:'Douche',dur:20,tags:[]},
+      {id:'hab',icon:'👕',label:"S\'habiller",dur:10,tags:['après douche']},
+      {id:'sac',icon:'🎒',label:'Préparer sac',dur:10,tags:[]},
+    ],
+    // correct order constraint check
+    constraints:[
+      {rule:'après douche', requires:'dch', before:'hab', msg:'On s\'habille après la douche !'},
+    ],
+    correctOrders:[['dch','hab'],['dch','pdj','hab'],['pdj','dch','hab']],
+    feedback:{ok:"Parfait ! Tu as bien planifié ta matinée.",ko:"Attention à l'ordre : on se douche avant de s'habiller !"}
+  },
+  {
+    title:"Après-midi productive 📚",
+    desc:"Tu as 2h libres. Tu veux faire : devoirs, goûter, appel ami (15 min), et ranger ta chambre.",
+    slots:["14h00","14h30","15h00","15h30","16h00"],
+    tasks:[
+      {id:'dv',icon:'📚',label:'Devoirs',dur:60,tags:['concentration']},
+      {id:'gt',icon:'🍎',label:'Goûter',dur:15,tags:['pause']},
+      {id:'ap',icon:'📱',label:'Appel ami',dur:15,tags:['pause']},
+      {id:'rg',icon:'🧹',label:'Ranger chambre',dur:30,tags:[]},
+    ],
+    constraints:[
+      {rule:'devoirs en premier', requires:'dv', shouldBeFirst:true, msg:'Mieux vaut faire les devoirs d\'abord quand tu es frais !'}
+    ],
+    correctOrders:[['dv','gt','ap','rg'],['dv','gt','rg','ap'],['dv','rg','gt','ap']],
+    feedback:{ok:"Excellente organisation ! Les devoirs d'abord, c'est la bonne stratégie.",ko:"Les devoirs en premier, c'est plus efficace quand tu es encore concentré."}
+  },
+  {
+    title:"Soirée pizza 🍕",
+    desc:"Tes amis arrivent à 19h. Tu dois cuisiner une pizza, mettre la table et te préparer.",
+    slots:["17h00","17h30","18h00","18h30","19h00"],
+    tasks:[
+      {id:'pz',icon:'🍕',label:'Préparer pizza',dur:45,tags:['chaud']},
+      {id:'tb',icon:'🍽️',label:'Mettre la table',dur:15,tags:[]},
+      {id:'pr',icon:'🪥',label:'Se préparer',dur:30,tags:[]},
+      {id:'mu',icon:'🎵',label:'Mettre de la musique',dur:5,tags:['dernier moment']},
+    ],
+    constraints:[
+      {rule:'pizza avant table', requires:'pz', before:'tb', msg:'La table peut attendre que la pizza soit lancée !'}
+    ],
+    correctOrders:[['pr','pz','tb','mu'],['pz','pr','tb','mu'],['pz','tb','pr','mu']],
+    feedback:{ok:"Super organisation ! La soirée va être parfaite.",ko:"Commence par te préparer ou lancer la pizza — la table peut attendre !"}
+  },
+  {
+    title:"Journée de voyage ✈️",
+    desc:"Ton avion part à 10h. L'aéroport est à 1h. Tu dois être là 2h avant.",
+    slots:["6h00","6h30","7h00","7h30","8h00"],
+    tasks:[
+      {id:'rv',icon:'⏰',label:'Se réveiller / douche',dur:30,tags:['premier']},
+      {id:'vl',icon:'🧳',label:'Vérifier valise',dur:15,tags:[]},
+      {id:'dj',icon:'☕',label:'Café rapide',dur:15,tags:[]},
+      {id:'tx',icon:'🚕',label:'Appeler taxi',dur:5,tags:['avant départ']},
+    ],
+    constraints:[
+      {rule:'taxi avant 8h', latest:'tx', bySlot:'7h30', msg:'Il faut appeler le taxi avant 7h30 pour partir à temps !'}
+    ],
+    correctOrders:[['rv','dj','vl','tx'],['rv','vl','dj','tx'],['rv','tx','vl','dj']],
+    feedback:{ok:"Parfait ! Tu vas attraper ton avion.",ko:"Attention ! Il faut appeler le taxi avant 7h30 pour être à l'aéroport 2h avant."}
+  },
+  {
+    title:"Journée d'examen 📝",
+    desc:"Ton examen est à 9h. Tu dois te préparer, réviser 30 min et manger.",
+    slots:["7h00","7h30","8h00","8h30"],
+    tasks:[
+      {id:'rv',icon:'⏰',label:'Se lever / douche',dur:30,tags:[]},
+      {id:'rr',icon:'📖',label:'Révision express',dur:30,tags:['avant examen']},
+      {id:'pd',icon:'🥐',label:'Petit-déjeuner',dur:20,tags:['énergie']},
+      {id:'dp',icon:'🚶',label:"Partir à l'examen",dur:20,tags:['dernier']},
+    ],
+    constraints:[
+      {rule:'révision avant départ', requires:'rr', before:'dp', msg:'Révise avant de partir, pas sur le trajet !'},
+      {rule:'petit-déjeuner avant révision', requires:'pd', before:'rr', msg:'Mange avant de réviser pour être concentré !'},
+    ],
+    correctOrders:[['rv','pd','rr','dp']],
+    feedback:{ok:"Parfait ! Bien nourri, bien révisé, tu es prêt.",ko:"Mange d'abord pour avoir l'énergie de réviser efficacement !"}
+  },
+  {
+    title:"Sport + devoirs 🏃",
+    desc:"Tu as entraînement de 16h à 17h30. Tu dois faire 1h de devoirs et dîner à 19h.",
+    slots:["16h00","17h30","18h00","18h30","19h00"],
+    tasks:[
+      {id:'sp',icon:'🏃',label:'Entraînement',dur:90,tags:['fixe']},
+      {id:'sh',icon:'🚿',label:'Douche post-sport',dur:15,tags:['après sport']},
+      {id:'dv',icon:'📚',label:'Devoirs',dur:60,tags:[]},
+      {id:'dn',icon:'🍽️',label:'Dîner',dur:30,tags:['fixe 19h']},
+    ],
+    constraints:[
+      {rule:'douche après sport', requires:'sp', before:'sh', msg:'On se douche après le sport, pas avant !'},
+      {rule:'devoirs avant dîner', requires:'dv', before:'dn', msg:'Fais les devoirs avant le dîner pendant que tu es encore actif.'},
+    ],
+    correctOrders:[['sp','sh','dv','dn']],
+    feedback:{ok:"Organisation impeccable ! Sport, douche, devoirs, dîner.",ko:"Douche après le sport, et devoirs avant de passer à table !"}
+  },
+  {
+    title:"Anniversaire surprise 🎉",
+    desc:"L'anniversaire de ton ami est à 17h. Tu dois acheter un cadeau, faire un gâteau (1h) et te préparer.",
+    slots:["13h00","13h30","14h00","15h00","16h00"],
+    tasks:[
+      {id:'ac',icon:'🛍️',label:'Acheter cadeau',dur:45,tags:[]},
+      {id:'gz',icon:'🎂',label:'Faire le gâteau',dur:60,tags:['doit refroidir']},
+      {id:'pr',icon:'👗',label:'Se préparer',dur:45,tags:[]},
+      {id:'dp',icon:'🚗',label:'Partir',dur:15,tags:['dernier']},
+    ],
+    constraints:[
+      {rule:'gâteau tôt', requires:'gz', shouldBeFirst:true, msg:'Le gâteau doit être fait tôt pour refroidir avant de partir !'},
+    ],
+    correctOrders:[['gz','ac','pr','dp'],['gz','pr','ac','dp']],
+    feedback:{ok:"Excellent ! Le gâteau en premier pour qu'il refroidisse.",ko:"Le gâteau d'abord ! Il faut du temps pour refroidir avant de le transporter."}
+  },
+];
+
+// ── MODE 2: STEPS sequences ──
+const STEPS_SCENARIOS = [
+  {
+    title:"🍝 Faire des pâtes",
+    steps:[
+      {id:'a',icon:'💧',label:"Faire bouillir l\'eau"},
+      {id:'b',icon:'🧂',label:"Saler l\'eau"},
+      {id:'c',icon:'🍝',label:'Mettre les pâtes'},
+      {id:'d',icon:'⏱️',label:'Attendre la cuisson'},
+      {id:'e',icon:'🫙',label:'Égoutter les pâtes'},
+      {id:'f',icon:'🍅',label:'Ajouter la sauce'},
+    ],
+    feedback:{ok:"Parfait ! Tu maîtrises la recette.",ko:"L'ordre est important : l'eau doit bouillir avant d'y mettre les pâtes !"}
+  },
+  {
+    title:"📱 Envoyer un email",
+    steps:[
+      {id:'a',icon:'📬',label:'Ouvrir sa messagerie'},
+      {id:'b',icon:'✏️',label:'Cliquer sur "Nouveau message"'},
+      {id:'c',icon:'📧',label:"Écrire l\'adresse du destinataire"},
+      {id:'d',icon:'📝',label:"Écrire l\'objet"},
+      {id:'e',icon:'💬',label:'Rédiger le message'},
+      {id:'f',icon:'📎',label:'Ajouter une pièce jointe si besoin'},
+      {id:'g',icon:'🚀',label:'Envoyer'},
+    ],
+    feedback:{ok:"Parfait ! Email envoyé correctement.",ko:"N'oublie pas : adresse, objet, contenu — dans cet ordre !"}
+  },
+  {
+    title:"🚴 Partir à vélo",
+    steps:[
+      {id:'a',icon:'🔍',label:'Vérifier les pneus'},
+      {id:'b',icon:'⛑️',label:'Mettre le casque'},
+      {id:'c',icon:'🔒',label:"Prendre l\'antivol"},
+      {id:'d',icon:'🗺️',label:"Vérifier l\'itinéraire"},
+      {id:'e',icon:'🚴',label:'Partir'},
+    ],
+    feedback:{ok:"Super préparation ! Trajet sécurisé.",ko:"La sécurité d'abord : vérification du vélo et casque avant de partir !"}
+  },
+  {
+    title:"🛒 Faire les courses",
+    steps:[
+      {id:'a',icon:'📋',label:'Faire la liste de courses'},
+      {id:'b',icon:'💳',label:'Prendre son portefeuille'},
+      {id:'c',icon:'🛍️',label:'Prendre ses sacs'},
+      {id:'d',icon:'🚶',label:'Aller au magasin'},
+      {id:'e',icon:'🛒',label:'Faire les courses'},
+      {id:'f',icon:'💰',label:'Payer'},
+      {id:'g',icon:'🏠',label:'Rentrer et ranger'},
+    ],
+    feedback:{ok:"Parfait ! Tu ne ressortiras pas chercher ce que tu as oublié.",ko:"La liste d'abord — sinon on oublie toujours quelque chose !"}
+  },
+  {
+    title:"🏥 Prendre un rendez-vous médical",
+    steps:[
+      {id:'a',icon:'📅',label:'Choisir une date disponible'},
+      {id:'b',icon:'📞',label:'Appeler le cabinet'},
+      {id:'c',icon:'🗒️',label:'Noter le rendez-vous'},
+      {id:'d',icon:'📁',label:'Préparer sa carte vitale'},
+      {id:'e',icon:'🚌',label:'Prévoir le transport'},
+      {id:'f',icon:'🏥',label:'Se rendre au rendez-vous'},
+    ],
+    feedback:{ok:"Très organisé ! Aucun oubli possible.",ko:"Pense à noter le RDV et préparer ta carte vitale à l'avance !"}
+  },
+  {
+    title:"🎂 Préparer un gâteau",
+    steps:[
+      {id:'a',icon:'🌡️',label:'Préchauffer le four'},
+      {id:'b',icon:'🧈',label:'Peser les ingrédients'},
+      {id:'c',icon:'🥣',label:'Mélanger la pâte'},
+      {id:'d',icon:'🫙',label:'Verser dans le moule'},
+      {id:'e',icon:'🔥',label:'Enfourner'},
+      {id:'f',icon:'⏱️',label:'Surveiller la cuisson'},
+      {id:'g',icon:'❄️',label:'Laisser refroidir'},
+    ],
+    feedback:{ok:"Parfait pâtissier ! Le four doit préchauffer en premier.",ko:"N'oublie pas de préchauffer le four en premier !"}
+  },
+  {
+    title:"🧺 Faire sa lessive",
+    steps:[
+      {id:'a',icon:'👕',label:'Trier le linge (couleurs/blancs)'},
+      {id:'b',icon:'🫙',label:'Mettre la lessive dans le bac'},
+      {id:'c',icon:'🌀',label:'Charger le linge dans la machine'},
+      {id:'d',icon:'⚙️',label:'Choisir le programme'},
+      {id:'e',icon:'▶️',label:'Lancer la machine'},
+      {id:'f',icon:'🧺',label:'Sortir et étendre le linge'},
+      {id:'g',icon:'👔',label:'Plier une fois sec'},
+    ],
+    feedback:{ok:"Parfait ! La lessive, c'est dans cet ordre.",ko:"Trie d'abord, puis mets la lessive, puis le linge !"}
+  },
+  {
+    title:"💻 Installer une application",
+    steps:[
+      {id:'a',icon:'🌐',label:'Ouvrir le navigateur ou store'},
+      {id:'b',icon:'🔍',label:"Rechercher l'application"},
+      {id:'c',icon:'✅',label:'Vérifier les avis et permissions'},
+      {id:'d',icon:'⬇️',label:'Cliquer sur Télécharger'},
+      {id:'e',icon:'⏳',label:"Attendre l'installation"},
+      {id:'f',icon:'📱',label:"Ouvrir l'application"},
+      {id:'g',icon:'⚙️',label:'Configurer son compte'},
+    ],
+    feedback:{ok:"Parfait ! Tu installes les apps en toute sécurité.",ko:"Vérifie toujours les avis avant de télécharger !"}
+  },
+  {
+    title:"🎒 Préparer son sac pour l'école",
+    steps:[
+      {id:'a',icon:'📅',label:"Regarder l'emploi du temps"},
+      {id:'b',icon:'📚',label:'Rassembler les livres nécessaires'},
+      {id:'c',icon:'📓',label:'Vérifier que les cahiers sont là'},
+      {id:'d',icon:'✏️',label:'Mettre la trousse'},
+      {id:'e',icon:'🥪',label:'Ajouter le repas / la gourde'},
+      {id:'f',icon:'🔒',label:'Fermer et vérifier le sac'},
+    ],
+    feedback:{ok:"Parfait ! Tu n'oublieras rien.",ko:"Commence par l'emploi du temps pour savoir quoi mettre !"}
+  },
+  {
+    title:"🚿 Se préparer le matin",
+    steps:[
+      {id:'a',icon:'⏰',label:'Se lever quand le réveil sonne'},
+      {id:'b',icon:'🚿',label:'Prendre une douche'},
+      {id:'c',icon:'🧴',label:'Se laver les dents'},
+      {id:'d',icon:'👕',label:"S'habiller"},
+      {id:'e',icon:'🥣',label:'Prendre le petit-déjeuner'},
+      {id:'f',icon:'🎒',label:'Prendre son sac'},
+      {id:'g',icon:'🚪',label:'Partir'},
+    ],
+    feedback:{ok:"Routine matinale parfaite !",ko:"Douche avant de s'habiller, et petit-déj avant de partir !"}
+  },
+  {
+    title:"📞 Résoudre un problème technique",
+    steps:[
+      {id:'a',icon:'🔍',label:'Identifier clairement le problème'},
+      {id:'b',icon:'🔄',label:"Redémarrer l'appareil"},
+      {id:'c',icon:'🌐',label:'Chercher la solution en ligne'},
+      {id:'d',icon:'🧪',label:'Essayer la solution proposée'},
+      {id:'e',icon:'📞',label:'Si échec : contacter le support'},
+      {id:'f',icon:'✅',label:'Vérifier que tout fonctionne'},
+    ],
+    feedback:{ok:"Méthode parfaite ! Toujours commencer par redémarrer.",ko:"Redémarre d'abord — ça résout 80% des problèmes !"}
+  },
+];
+
+// ── MODE 3: CONSEQUENCES scenarios ──
+const CONSEQ_SCENARIOS = [
+  {
+    situation:"🌧️ Il pleut dehors",
+    context:"Tu dois aller à l'école à pied (15 min). Tu es déjà en retard de 5 minutes. Tu n'as pas pris de parapluie.",
+    choices:[
+      {icon:'☂️',label:'Revenir chercher le parapluie',consequence:'Tu arrives encore plus en retard (5 min de plus), mais tu restes sec. Le prof note le retard.',isOk:false},
+      {icon:'🏃',label:'Y aller sans parapluie, courir',consequence:'Tu arrives à peine à l\'heure mais tu es trempé. Inconfort toute la journée.',isOk:false},
+      {icon:'📱',label:"Appeler un parent pour qu\'il t\'amène",consequence:'Tu arrives à l\'heure et au sec. Solution optimale si possible !',isOk:true},
+      {icon:'🚌',label:"Prendre le bus (2 min d\'attente)",consequence:'Tu arrives légèrement en retard mais au sec. Bon compromis !',isOk:true},
+    ],
+    explain:"Les deux meilleures solutions évitent d'être trempé sans aggraver le retard.",
+  },
+  {
+    situation:"📱 Ton téléphone est à 3% de batterie",
+    context:"Tu as une journée chargée dehors. Tu n'as pas pris ton chargeur. Tu dois appeler tes parents ce soir.",
+    choices:[
+      {icon:'🎮',label:'Continuer à jouer sur le téléphone',consequence:'La batterie meurt dans 10 min. Tu ne peux pas appeler tes parents.',isOk:false},
+      {icon:'✈️',label:'Passer en mode avion et garder pour appeler',consequence:'Tu conserves de la batterie pour l\'essentiel. Bonne décision !',isOk:true},
+      {icon:'🔋',label:"Demander un chargeur à quelqu\'un",consequence:'Tu recharges et tu peux tout faire. Solution optimale !',isOk:true},
+      {icon:'📵',label:'Éteindre complètement le téléphone',consequence:'Tu conserves la batterie mais tu es injoignable tout la journée.',isOk:false},
+    ],
+    explain:"Mode avion ou trouver un chargeur sont les meilleures options pour garder le contact.",
+  },
+  {
+    situation:"😴 Tu as très mal dormi",
+    context:"Tu as un contrôle important demain matin. Il est 23h. Tu as encore 2 chapitres à réviser.",
+    choices:[
+      {icon:'📚',label:'Réviser toute la nuit',consequence:'Tu connais bien le cours mais tu es épuisé. La mémoire fonctionne mal sous fatigue.',isOk:false},
+      {icon:'😴',label:'Aller dormir sans réviser',consequence:'Tu es reposé mais tu n\'as pas vu les 2 derniers chapitres.',isOk:false},
+      {icon:'⏰',label:'Réviser 45 min puis dormir',consequence:'Bon compromis : tu vois l\'essentiel et tu restes assez reposé.',isOk:true},
+      {icon:'🌅',label:'Dormir tôt et réviser 30 min le matin',consequence:'Excellente stratégie ! Le matin on retient mieux et on est reposé.',isOk:true},
+    ],
+    explain:"Le cerveau consolide la mémoire pendant le sommeil — dormir est une part de la révision.",
+  },
+  {
+    situation:"🍔 Tu as faim mais le repas est dans 30 min",
+    context:"Tu rentres de l'école affamé. Le dîner sera prêt dans 30 minutes. Tu hésites à manger quelque chose.",
+    choices:[
+      {icon:'🍫',label:'Manger un paquet de chips',consequence:'Tu n\'as plus faim au dîner et tu manques un repas équilibré.',isOk:false},
+      {icon:'🍎',label:'Manger un fruit ou légume crudité',consequence:'Tu cales un peu la faim sans gâcher l\'appétit. Parfait !',isOk:true},
+      {icon:'🚰',label:"Boire un grand verre d\'eau",consequence:'Souvent la soif ressemble à la faim. Tu peux attendre le dîner.',isOk:true},
+      {icon:'🍕',label:'Réchauffer des restes',consequence:'Tu gâches ton appétit et tu arrives au dîner sans faim.',isOk:false},
+    ],
+    explain:"Fruit ou eau permettent d'attendre sans gâcher le dîner.",
+  },
+  {
+    situation:"🎮 Tu as oublié un devoir pour demain",
+    context:"Il est 21h. Tu viens de réaliser que tu as oublié de faire un devoir important pour demain. Tu es fatigué.",
+    choices:[
+      {icon:'😴',label:"Aller dormir, faire semblant d\'avoir oublié",consequence:'Tu risques une mauvaise note et le prof perd confiance en toi.',isOk:false},
+      {icon:'⚡',label:'Le faire maintenant en 30 min même fatigué',consequence:'Devoir rendu, même imparfait. Mieux que rien !',isOk:true},
+      {icon:'📱',label:'Demander à un camarade de te montrer',consequence:'Tu le copies sans vraiment apprendre. Risque de plagiat.',isOk:false},
+      {icon:'📧',label:'Prévenir le prof par mail et expliquer',consequence:'Honnêteté appréciée. Le prof peut accorder un délai.',isOk:true},
+    ],
+    explain:"Faire le devoir ou prévenir honnêtement sont les deux approches responsables.",
+  },
+  {
+    situation:"💸 Tu as reçu 20€ pour ton anniversaire",
+    context:"Tu veux acheter un jeu à 18€. Mais tu sais que tu as besoin de prendre le bus toute la semaine (2€/jour x 5 jours = 10€).",
+    choices:[
+      {icon:'🎮',label:'Acheter le jeu maintenant',consequence:'Tu n\'as plus assez pour le bus et tu dois marcher ou demander de l\'argent.',isOk:false},
+      {icon:'💰',label:'Garder tout pour le bus + économiser',consequence:'Tu prends le bus toute la semaine. Il te reste 10€ pour plus tard.',isOk:true},
+      {icon:'🤔',label:'Acheter le jeu et emprunter pour le bus',consequence:'Tu joues mais tu crées une dette. Problème reporté.',isOk:false},
+      {icon:'🛒',label:'Chercher le jeu en occasion moins cher',consequence:'Tu économises et tu gardes de l\'argent pour le bus. Optimal !',isOk:true},
+    ],
+    explain:"Prévoir ses dépenses obligatoires avant les loisirs, c'est de la bonne planification.",
+  },
+];
+
+// ══════════════════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════════════════
+const CONFIGS = {
+  easy:    {label:'Facile',   qCount:5,  endless:false, maxErrors:99, stepsCount:4},
+  medium:  {label:'Moyen',    qCount:8,  endless:false, maxErrors:99, stepsCount:5},
+  hard:    {label:'Difficile',qCount:12, endless:false, maxErrors:99, stepsCount:7},
+  endless: {label:'Infini ♾', qCount:999,endless:true,  maxErrors:3,  stepsCount:5},
+};
+
+// ══════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════
+let currentMode='plan', levelKey='easy', cfg=CONFIGS.easy;
+let score=0,errors=0,correct=0,streak=0,bestStreak=0,lives=3;
+let qIndex=0, running=false, sessionTok=0;
+let currentQ=null, answered=false;
+let dragSrc=null, dragType=null;
+// Track used scenarios per session to avoid repeats
+let usedPlanning=new Set(), usedSteps=new Set(), usedConseq=new Set();
+
+// ══════════════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════════════
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
+function shuffle(a){const r=[...a];for(let i=r.length-1;i>0;i--){const j=rand(0,i);[r[i],r[j]]=[r[j],r[i]];}return r;}
+function livesStr(n,max=3){return '❤'.repeat(Math.max(0,n))+'🖤'.repeat(Math.max(0,max-n));}
+function toast(msg,type,dur=1800){const el=document.getElementById('toast');el.textContent=msg;el.className='show '+type;clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),dur);}
+function selectMode(m,el){currentMode=m;document.querySelectorAll('.mode-card').forEach(c=>c.classList.remove('selected'));el.classList.add('selected');}
+function selectLevel(el,k){levelKey=k;document.querySelectorAll('.lvl-card').forEach(c=>c.classList.remove('selected'));el.classList.add('selected');}
+
+function markOk(pts=200){correct++;streak++;if(streak>bestStreak)bestStreak=streak;score+=pts*Math.max(1,Math.ceil(streak/3));}
+function markKo(){errors++;streak=0;if(cfg.endless){lives--;if(lives<=0)return true;}return false;}
+
+function updateHUD(){
+  document.getElementById('hud-score').textContent=score;
+  document.getElementById('hud-streak').textContent=streak;
+  document.getElementById('hud-lives').textContent=cfg.endless?livesStr(lives,cfg.maxErrors):'∞';
+  document.getElementById('hud-q').textContent=(cfg.endless?qIndex:qIndex)+'/'+( cfg.endless?'∞':cfg.qCount);
+  document.getElementById('prog-bar').style.width=(cfg.endless?0:Math.min(100,qIndex/cfg.qCount*100))+'%';
+}
+
+// ══════════════════════════════════════════════════════
+//  LAUNCH
+// ══════════════════════════════════════════════════════
+function launchGame(){
+  cfg=CONFIGS[levelKey];
+  score=0;errors=0;correct=0;streak=0;bestStreak=0;lives=cfg.maxErrors;qIndex=0;
+  running=true;sessionTok++;answered=false;
+  usedPlanning=new Set();usedSteps=new Set();usedConseq=new Set();
+  const icons={plan:'📅',steps:'🔢',conseq:'🔮'};
+  const msgs={plan:'Organise ta journée !',steps:'Remets dans l\'ordre !',conseq:'Anticipe les conséquences !'};
+  document.getElementById('cd-icon').textContent=icons[currentMode];
+  document.getElementById('cd-msg').textContent=msgs[currentMode];
+  countdown(()=>startGame());
+}
+function replayGame(){launchGame();}
+
+function countdown(cb){
+  showScreen('s-countdown');let n=3;const el=document.getElementById('cd-num');el.textContent=n;
+  const iv=setInterval(()=>{n--;if(n<=0){clearInterval(iv);cb();}
+    else{el.textContent=n;el.style.animation='none';void el.offsetWidth;el.style.animation='cPop .7s cubic-bezier(.175,.885,.32,1.275)';}},900);
+}
+
+function startGame(){
+  const labels={plan:'📅 Planning',steps:'🔢 Étapes',conseq:'🔮 Conséquences'};
+  const badges={
+    plan:'<span class="mode-badge mode-badge-plan">Organiser</span>',
+    steps:'<span class="mode-badge mode-badge-steps">Ordonner</span>',
+    conseq:'<span class="mode-badge mode-badge-conseq">Anticiper</span>',
+  };
+  document.getElementById('game-mode-label').textContent=labels[currentMode];
+  document.getElementById('mode-badge-el').innerHTML=badges[currentMode];
+  showScreen('s-game');
+  updateHUD();
+  nextQuestion();
+}
+
+// ══════════════════════════════════════════════════════
+//  QUESTION DISPATCH
+// ══════════════════════════════════════════════════════
+function nextQuestion(){
+  const myTok=sessionTok;
+  if(!running||myTok!==sessionTok)return;
+  if(!cfg.endless&&qIndex>=cfg.qCount){showResults();return;}
+  qIndex++;answered=false;
+  hideFeedback();document.getElementById('confirm-wrap').style.display='none';
+  updateHUD();
+
+  if(currentMode==='plan')     renderPlanning(myTok);
+  else if(currentMode==='steps') renderSteps(myTok);
+  else                          renderConseq(myTok);
+}
+
+function hideFeedback(){
+  const fp=document.getElementById('feedback-panel');
+  fp.className='feedback-panel';fp.style.display='none';
+}
+
+// ══════════════════════════════════════════════════════
+//  MODE 1 — PLANNING
+// ══════════════════════════════════════════════════════
+let planningSlotMap={};  // slotId → taskId
+
+function renderPlanning(myTok){
+  // Pick unused scenario, reset when all used
+  const available=PLANNING_SCENARIOS.filter(s=>!usedPlanning.has(s.title));
+  const pool=available.length>0?available:PLANNING_SCENARIOS;
+  if(available.length===0)usedPlanning=new Set();
+  currentQ=pick(pool);
+  usedPlanning.add(currentQ.title);
+
+  // Difficulty affects how many tasks to place (easy=3, medium=4, hard=all, endless grows)
+  const taskCount=levelKey==='easy'?3:levelKey==='medium'?Math.min(4,currentQ.tasks.length):currentQ.tasks.length;
+  const tasks=currentQ.tasks.slice(0,taskCount);
+  const slots=currentQ.slots.slice(0, tasks.length); // dynamic
+  planningSlotMap={};
+
+  const area=document.getElementById('question-area');
+  area.innerHTML='';
+
+  // Scenario card
+  const sc=document.createElement('div');
+  sc.className='planning-scenario';
+  sc.innerHTML=`<div class="scenario-title">${currentQ.title}</div>
+    <div class="scenario-desc">${currentQ.desc}</div>
+    <div class="scenario-constraints">${currentQ.constraints.map(c=>`<span class="constraint-tag">⚠️ ${c.msg||c.rule}</span>`).join('')}</div>`;
+  area.appendChild(sc);
+
+  // Timeline slots
+  const tl=document.createElement('div');tl.className='timeline';tl.id='timeline';
+  slots.forEach((time,i)=>{
+    const slotId='slot-'+i;
+    const div=document.createElement('div');
+    div.className='time-slot';div.id=slotId;div.dataset.slot=slotId;
+    div.innerHTML=`<div class="slot-time">${time}</div><div class="slot-content" id="sc-${slotId}"><span class="slot-empty">Glisse ici</span></div>`;
+    div.addEventListener('dragover',e=>{e.preventDefault();div.classList.add('drag-over');});
+    div.addEventListener('dragleave',()=>div.classList.remove('drag-over'));
+    div.addEventListener('drop',e=>{
+      e.preventDefault();div.classList.remove('drag-over');
+      if(dragType==='task')dropTaskOnSlot(slotId,div,myTok);
+    });
+    // Touch/click target
+    div.onclick=()=>{if(dragSrc&&dragType==='task')dropTaskOnSlot(slotId,div,myTok);};
+    tl.appendChild(div);
+  });
+  area.appendChild(tl);
+
+  // Task chips
+  const chipWrap=document.createElement('div');chipWrap.className='task-chips';chipWrap.id='task-chips';
+  tasks.forEach(t=>{
+    const chip=document.createElement('div');
+    chip.className='task-chip';chip.id='chip-'+t.id;chip.dataset.taskId=t.id;
+    chip.draggable=true;
+    chip.innerHTML=`<span class="chip-icon">${t.icon}</span><span>${t.label}</span><span class="chip-dur">${t.dur}min</span>`;
+    chip.addEventListener('dragstart',()=>{dragSrc=t.id;dragType='task';chip.classList.add('dragging');});
+    chip.addEventListener('dragend',()=>{chip.classList.remove('dragging');});
+    chip.onclick=()=>{
+      if(dragSrc===t.id){dragSrc=null;dragType=null;document.querySelectorAll('.task-chip').forEach(c=>c.style.outline='');}
+      else{dragSrc=t.id;dragType='task';document.querySelectorAll('.task-chip').forEach(c=>c.style.outline=c.id==='chip-'+t.id?'3px solid var(--accent)':'');}
+    };
+    chipWrap.appendChild(chip);
+  });
+  area.appendChild(chipWrap);
+
+  // Confirm button appears once all slots filled
+  document.getElementById('confirm-wrap').style.display='none';
+}
+
+function dropTaskOnSlot(slotId,slotEl,myTok){
+  if(!dragSrc||!running||myTok!==sessionTok)return;
+  const taskId=dragSrc;dragSrc=null;dragType=null;
+  document.querySelectorAll('.task-chip').forEach(c=>c.style.outline='');
+
+  // If slot already has a task, return it
+  if(planningSlotMap[slotId]){
+    const oldTaskId=planningSlotMap[slotId];
+    const oldChip=document.getElementById('chip-'+oldTaskId);
+    if(oldChip)oldChip.classList.remove('placed');
+    delete planningSlotMap[slotId];
+  }
+  // If task is already in another slot, remove it
+  Object.keys(planningSlotMap).forEach(sid=>{
+    if(planningSlotMap[sid]===taskId&&sid!==slotId){
+      const oldSlot=document.getElementById(sid);
+      if(oldSlot){
+        oldSlot.classList.remove('has-task');
+        document.getElementById('sc-'+sid).innerHTML='<span class="slot-empty">Glisse ici</span>';
+      }
+      delete planningSlotMap[sid];
+    }
+  });
+
+  const task=currentQ.tasks.find(t=>t.id===taskId);
+  planningSlotMap[slotId]=taskId;
+  slotEl.classList.add('has-task');
+  document.getElementById('sc-'+slotId).innerHTML=`<span style="font-size:1.1rem">${task.icon}</span><span style="font-weight:600;font-size:.82rem">${task.label}</span>`;
+  const chip=document.getElementById('chip-'+taskId);
+  if(chip)chip.classList.add('placed');
+
+  // Show confirm if all slots filled (use actual task count, not full scenario count)
+  const totalSlots=document.querySelectorAll('.time-slot').length;
+  if(Object.keys(planningSlotMap).length>=totalSlots){
+    document.getElementById('confirm-wrap').style.display='flex';
+  }
+}
+
+function confirmAnswer(){
+  if(answered||!running)return;
+  answered=true;
+  document.getElementById('confirm-wrap').style.display='none';
+
+  if(currentMode==='plan') evaluatePlanning();
+  else if(currentMode==='steps') evaluateSteps();
+}
+
+function evaluatePlanning(){
+  const slots=Object.entries(planningSlotMap).sort((a,b)=>parseInt(a[0].split('-')[1])-parseInt(b[0].split('-')[1]));
+  const order=slots.map(([,tid])=>tid);
+
+  let ok=true, failMsg='';
+
+  // 1. Check all explicit constraints
+  for(const constraint of currentQ.constraints){
+    if(constraint.before){
+      const iReq=order.indexOf(constraint.requires);
+      const iBef=order.indexOf(constraint.before);
+      if(iReq>iBef&&iBef!==-1){ok=false;failMsg=constraint.msg;break;}
+    }
+    if(constraint.shouldBeFirst){
+      if(order[0]!==constraint.requires){ok=false;failMsg=constraint.msg;break;}
+    }
+    if(constraint.bySlot){
+      const taskSlot=Object.entries(planningSlotMap).find(([,tid])=>tid===constraint.latest)?.[0];
+      const slotIdx=taskSlot?parseInt(taskSlot.split('-')[1]):99;
+      const byIdx=currentQ.slots.indexOf(constraint.bySlot);
+      if(slotIdx>byIdx){ok=false;failMsg=constraint.msg;break;}
+    }
+  }
+
+  // 2. Check against correctOrders if constraints passed
+  // correctOrders contains allowed orderings (subsequences that must appear)
+  if(ok && currentQ.correctOrders && currentQ.correctOrders.length>0){
+    // An order is valid if it matches ANY of the listed correct orders
+    // A correctOrder is a required subsequence — the placed tasks must appear in this relative order
+    const matchesAny = currentQ.correctOrders.some(correctSeq=>{
+      // Check that the relative order of correctSeq items is preserved in 'order'
+      let lastIdx=-1;
+      for(const taskId of correctSeq){
+        const idx=order.indexOf(taskId);
+        if(idx===-1||idx<=lastIdx) return false;
+        lastIdx=idx;
+      }
+      return true;
+    });
+    if(!matchesAny){
+      ok=false;
+      failMsg=failMsg||currentQ.feedback.ko;
+    }
+  }
+
+  // 3. Highlight slots: green if task is in a valid position, red if not
+  const bestOrder = currentQ.correctOrders?.[0] || order;
+  Object.entries(planningSlotMap).forEach(([slotId,taskId])=>{
+    const slotEl=document.getElementById(slotId);
+    if(!slotEl) return;
+    // A task is correctly placed if its relative position matches a correct order
+    const taskPos=order.indexOf(taskId);
+    const correctPos=bestOrder.indexOf(taskId);
+    const posOk = ok || (correctPos!==-1 && taskPos===correctPos);
+    slotEl.style.borderColor = ok ? 'var(--green)' : (posOk?'var(--green)':'var(--red)');
+  });
+
+  showFeedback(ok, currentQ.feedback.ok, failMsg||currentQ.feedback.ko);
+  if(ok){markOk(200);toast('✅ Bonne planification !','ok');}
+  else{const dead=markKo();toast('❌ '+failMsg,'ko',2500);updateHUD();if(dead){setTimeout(()=>showResults(),2000);return;}}
+  updateHUD();
+  setTimeout(()=>nextQuestion(),2800);
+}
+
+// ══════════════════════════════════════════════════════
+//  MODE 2 — STEPS
+// ══════════════════════════════════════════════════════
+let stepsPlaced=[]; // ordered placed step ids
+let stepsScenario=null;
+
+function renderSteps(myTok){
+  const availSt=STEPS_SCENARIOS.filter(s=>!usedSteps.has(s.title));
+  if(availSt.length===0)usedSteps=new Set();
+  stepsScenario=pick(availSt.length>0?availSt:STEPS_SCENARIOS);
+  usedSteps.add(stepsScenario.title);
+  const allSteps=stepsScenario.steps;
+  const count=Math.min(allSteps.length, cfg.stepsCount);
+  // Always use the first N steps (they are defined in correct order in data)
+  // but we could also pick a contiguous window — keep first N for correctness
+  const steps=allSteps.slice(0,count);
+  stepsPlaced=Array(count).fill(null);
+  // stepsCorrectOrder = steps[i].id in order 0..count-1
+
+  const area=document.getElementById('question-area');
+  area.innerHTML='';
+
+  const sc=document.createElement('div');
+  sc.className='steps-target';
+  sc.innerHTML=`<div class="steps-title">Remets dans l'ordre :<br><span style="color:var(--blue)">${stepsScenario.title}</span></div>`;
+
+  // Drop slots
+  const dropList=document.createElement('div');dropList.className='drop-list';dropList.id='drop-list';
+  steps.forEach((_,i)=>{
+    const div=document.createElement('div');
+    div.className='drop-slot';div.id='dslot-'+i;div.dataset.slotIdx=i;
+    div.innerHTML=`<span class="step-num">${i+1}.</span><span class="slot-empty">Dépose ici</span>`;
+    div.addEventListener('dragover',e=>{e.preventDefault();div.classList.add('drag-over');});
+    div.addEventListener('dragleave',()=>div.classList.remove('drag-over'));
+    div.addEventListener('drop',e=>{e.preventDefault();div.classList.remove('drag-over');if(dragType==='step')dropStepOnSlot(i,div,myTok);});
+    div.onclick=()=>{if(dragSrc!==null&&dragType==='step')dropStepOnSlot(i,div,myTok);};
+    dropList.appendChild(div);
+  });
+  sc.appendChild(dropList);
+  area.appendChild(sc);
+
+  // Shuffled step chips
+  const shuffled=shuffle([...steps]);
+  const chipWrap=document.createElement('div');chipWrap.className='step-items';chipWrap.id='step-chips';
+  shuffled.forEach(step=>{
+    const chip=document.createElement('div');
+    chip.className='step-chip';chip.id='schip-'+step.id;chip.dataset.stepId=step.id;
+    chip.draggable=true;
+    chip.innerHTML=`<span style="font-size:1.1rem">${step.icon}</span><span>${step.label}</span>`;
+    chip.addEventListener('dragstart',()=>{dragSrc=step.id;dragType='step';chip.classList.add('dragging');});
+    chip.addEventListener('dragend',()=>{chip.classList.remove('dragging');});
+    chip.onclick=()=>{
+      if(dragSrc===step.id){dragSrc=null;dragType=null;document.querySelectorAll('.step-chip').forEach(c=>c.style.outline='');}
+      else{dragSrc=step.id;dragType='step';document.querySelectorAll('.step-chip').forEach(c=>c.style.outline=c.id==='schip-'+step.id?'3px solid var(--blue)':'');}
+    };
+    chipWrap.appendChild(chip);
+  });
+  area.appendChild(chipWrap);
+  document.getElementById('confirm-wrap').style.display='none';
+}
+
+function dropStepOnSlot(slotIdx,slotEl,myTok){
+  if(dragSrc===null||dragType!=='step'||!running||myTok!==sessionTok)return;
+  const stepId=dragSrc;dragSrc=null;dragType=null;
+  document.querySelectorAll('.step-chip').forEach(c=>c.style.outline='');
+
+  // Return existing chip if slot taken
+  if(stepsPlaced[slotIdx]){
+    const oldId=stepsPlaced[slotIdx];
+    const oldChip=document.getElementById('schip-'+oldId);
+    if(oldChip)oldChip.classList.remove('used');
+    stepsPlaced[slotIdx]=null;
+  }
+  // Remove from other slot if already placed
+  stepsPlaced.forEach((id,i)=>{
+    if(id===stepId&&i!==slotIdx){
+      stepsPlaced[i]=null;
+      const oldSlot=document.getElementById('dslot-'+i);
+      if(oldSlot){oldSlot.classList.remove('has-item');oldSlot.innerHTML=`<span class="step-num">${i+1}.</span><span class="slot-empty">Dépose ici</span>`;}
+    }
+  });
+
+  const step=stepsScenario.steps.find(s=>s.id===stepId);
+  stepsPlaced[slotIdx]=stepId;
+  slotEl.classList.add('has-item');
+  slotEl.innerHTML=`<span class="step-num">${slotIdx+1}.</span><span style="font-size:1.1rem">${step.icon}</span><span style="font-weight:600;font-size:.82rem">${step.label}</span>`;
+  const chip=document.getElementById('schip-'+stepId);
+  if(chip)chip.classList.add('used');
+
+  if(stepsPlaced.every(s=>s!==null)){
+    document.getElementById('confirm-wrap').style.display='flex';
+  }
+}
+
+function evaluateSteps(){
+  const count=Math.min(stepsScenario.steps.length,cfg.stepsCount);
+  const correctOrder=stepsScenario.steps.slice(0,count).map(s=>s.id);
+
+  // Count correct positions
+  let correctCount=0;
+  stepsPlaced.forEach((id,i)=>{
+    const slot=document.getElementById('dslot-'+i);
+    const isCorrect=(id===correctOrder[i]);
+    if(isCorrect) correctCount++;
+    if(slot) slot.classList.add(isCorrect?'correct':'wrong');
+  });
+
+  // Full correct = all positions match
+  const ok=(correctCount===count);
+  // Partial: if only 1 wrong in hard mode, still count as ok (tolerance)
+  const partialOk = !ok && levelKey==='easy' && correctCount>=count-1;
+
+  const feedbackOk = ok||partialOk;
+  const pts = ok?200:partialOk?100:0;
+
+  showFeedback(feedbackOk,
+    ok?stepsScenario.feedback.ok:`✅ Presque ! ${correctCount}/${count} positions correctes.`,
+    `❌ ${correctCount}/${count} positions correctes. ${stepsScenario.feedback.ko}`
+  );
+  if(feedbackOk){markOk(pts);toast(ok?'✅ Parfait ordre !':'⚡ Presque parfait !','ok');}
+  else{const dead=markKo();toast(`❌ ${correctCount}/${count} — Ordre incorrect`,'ko',2000);updateHUD();if(dead){setTimeout(()=>showResults(),2000);return;}}
+  updateHUD();
+  setTimeout(()=>nextQuestion(),2800);
+}
+
+// ══════════════════════════════════════════════════════
+//  MODE 3 — CONSEQUENCES
+// ══════════════════════════════════════════════════════
+let conseqScenario=null, conseqChosen=null, conseqLocked=false;
+
+function renderConseq(myTok){
+  const availC=CONSEQ_SCENARIOS.filter(s=>!usedConseq.has(s.situation));
+  if(availC.length===0)usedConseq=new Set();
+  conseqScenario=pick(availC.length>0?availC:CONSEQ_SCENARIOS);
+  usedConseq.add(conseqScenario.situation);
+  conseqChosen=null;conseqLocked=false;
+
+  // Hard/endless: make only ONE answer correct (remove one of the two good ones)
+  // This forces more precise thinking
+  if((levelKey==='hard'||levelKey==='endless')&&conseqScenario.choices.filter(ch=>ch.isOk).length>1){
+    const goodIndices=conseqScenario.choices.map((ch,i)=>ch.isOk?i:-1).filter(i=>i>=0);
+    // randomly remove one good answer — mark it as not ideal
+    const toDowngrade=goodIndices[rand(0,goodIndices.length-1)];
+    conseqScenario={...conseqScenario,choices:conseqScenario.choices.map((ch,i)=>
+      i===toDowngrade?{...ch,isOk:false,consequence:ch.consequence+' (Mais il y a mieux…)'}:ch
+    )};
+  }
+
+  const area=document.getElementById('question-area');area.innerHTML='';
+
+  const sc=document.createElement('div');
+  sc.className='conseq-scene';
+  sc.innerHTML=`<div class="conseq-situation">${conseqScenario.situation}</div>
+    <div class="conseq-context">${conseqScenario.context}</div>`;
+  area.appendChild(sc);
+
+  const grid=document.createElement('div');grid.className='choice-grid';
+  conseqScenario.choices.forEach((ch,i)=>{
+    const btn=document.createElement('div');
+    btn.className='choice-btn';btn.dataset.idx=i;
+    btn.innerHTML=`<span class="choice-icon">${ch.icon}</span>
+      <div class="choice-label">${ch.label}</div>
+      <div class="choice-consequence" id="conseq-${i}">${ch.consequence}</div>`;
+    btn.onclick=()=>{if(!conseqLocked&&running&&myTok===sessionTok)selectConseq(i,btn,myTok);};
+    grid.appendChild(btn);
+  });
+  area.appendChild(grid);
+
+  // Chain hint
+  const hint=document.createElement('div');
+  hint.className='chain-indicator';
+  hint.innerHTML='🔗 Clique sur ta meilleure décision';
+  area.appendChild(hint);
+}
+
+function selectConseq(idx,btn,myTok){
+  if(conseqLocked||!running||myTok!==sessionTok)return;
+  conseqLocked=true;
+  conseqChosen=idx;
+
+  const ch=conseqScenario.choices[idx];
+
+  // Reveal all consequences
+  conseqScenario.choices.forEach((c,i)=>{
+    const cEl=document.getElementById('conseq-'+i);
+    if(cEl){
+      cEl.classList.add('show');
+      cEl.classList.add(c.isOk?'good':'bad');
+    }
+    const bEl=document.querySelector(`.choice-btn[data-idx="${i}"]`);
+    if(bEl&&c.isOk)bEl.classList.add('reveal-ok');
+  });
+
+  btn.classList.add(ch.isOk?'selected-ok':'selected-ko');
+
+  const ok=ch.isOk;
+  const explain=`💡 ${conseqScenario.explain}`;
+  showFeedback(ok, '✅ Bonne décision ! '+explain, '❌ '+ch.consequence+' — '+explain);
+  if(ok){markOk(200);toast('✅ Bonne anticipation !','ok');}
+  else{const dead=markKo();toast('❌ Pas optimal…','ko',2000);updateHUD();if(dead){setTimeout(()=>showResults(),2500);return;}}
+  updateHUD();
+  setTimeout(()=>nextQuestion(),3000);
+}
+
+// ══════════════════════════════════════════════════════
+//  FEEDBACK
+// ══════════════════════════════════════════════════════
+function showFeedback(ok,msgOk,msgKo){
+  const fp=document.getElementById('feedback-panel');
+  const ft=document.getElementById('feedback-title');
+  const fb=document.getElementById('feedback-body');
+  fp.className='feedback-panel show '+(ok?'ok':'ko');
+  fp.style.display='block';
+  ft.textContent=ok?'✅ Excellent !':'❌ Pas tout à fait…';
+  fb.textContent=ok?msgOk:msgKo;
+}
+
+// ══════════════════════════════════════════════════════
+//  RESULTS
+// ══════════════════════════════════════════════════════
+function showResults(){
+  running=false;sessionTok++;
+  const acc=correct+errors>0?Math.round(correct/(correct+errors)*100):0;
+  document.getElementById('res-score').textContent=score;
+  document.getElementById('res-correct').textContent=correct+' / '+(correct+errors);
+  document.getElementById('res-errors').textContent=errors;
+  document.getElementById('res-best').textContent=bestStreak;
+  let badge,title,msg,cls;
+  if(acc>=90){badge='🏆';title='Journée parfaite !';cls='perf-s';msg='🌟 Incroyable ! Tu planifies, ordonnes et anticipes comme un pro !';}
+  else if(acc>=70){badge='🥈';title='Très bien organisé !';cls='perf-a';msg='📅 Excellente gestion ! Quelques détails à affiner mais tu gères.';}
+  else if(acc>=50){badge='🥉';title='En bonne voie !';cls='perf-b';msg='💪 Bon effort ! La planification s\'améliore avec la pratique.';}
+  else{badge='🎮';title='Continue à pratiquer !';cls='perf-c';msg='🔄 La planification est une compétence qui se développe. Recommence !';}
+  document.getElementById('res-badge').textContent=badge;
+  document.getElementById('res-title').textContent=title;
+  const pm=document.getElementById('res-perf');pm.textContent=msg;pm.className='perf-msg '+cls;
+  showScreen('s-results');
+}
+
+// ══════════════════════════════════════════════════════
+//  QUIT
+// ══════════════════════════════════════════════════════
+function openQuit(){document.getElementById('quit-modal').classList.add('open');}
+function closeQuit(){document.getElementById('quit-modal').classList.remove('open');}
+function doQuit(){closeQuit();running=false;sessionTok++;showScreen('s-home');}
+</script>
+</body>
+</html>

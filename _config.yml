@@ -1,0 +1,4 @@
+# GitHub Pages : on publie les fichiers tels quels.
+# Les dossiers qui commencent par « _ » (dont _src) ne sont pas publiés.
+exclude:
+  - README.md

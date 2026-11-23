@@ -1,0 +1,58 @@
+<!--meta {"path": "cabinet/", "section": "cab", "short": "Le cabinet", "title": "Le cabinet NeuroBreizh : neuropsychologie à Rennes | NeuroBreizh", "description": "Le cabinet NeuroBreizh à Rennes : l'équipe, la façon de travailler (méthodes validées, explications claires, travail en réseau, secret professionnel) et l'accès.", "priority": "0.6"} -->
+<section class="page-hero">
+  <div class="wrap">
+    {{breadcrumb}}
+    <h1>Le cabinet</h1>
+    <p class="lede">NeuroBreizh est un cabinet de neuropsychologie installé à Rennes. Nous recevons des enfants, des adolescents et des adultes, et travaillons en lien avec les familles, les écoles et les autres professionnels de santé.</p>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="equipe-titre">
+  <div class="wrap">
+    <h2 id="equipe-titre" class="visually-hidden">L'équipe</h2>
+    <ul class="people" role="list">
+      <li class="person">
+        <h3>{{cfg:practitioner_1_name}}</h3>
+        <p class="role">Psychologue spécialisé en neuropsychologie</p>
+        <p>{{todo:Parcours en deux ou trois phrases : formation, expériences, publics reçus}}</p>
+        <dl><dt>ADELI ou RPPS</dt><dd>{{cfg:practitioner_1_id}}</dd></dl>
+      </li>
+      <li class="person">
+        <h3>{{cfg:practitioner_2_name}}</h3>
+        <p class="role">{{cfg:practitioner_2_title}}</p>
+        <p>{{todo:Parcours en deux ou trois phrases}}</p>
+        <dl><dt>ADELI ou RPPS</dt><dd>{{cfg:practitioner_2_id}}</dd></dl>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<section class="section tint" aria-labelledby="facon-titre">
+  <div class="wrap">
+    <div class="section-head"><h2 id="facon-titre">Notre façon de travailler</h2></div>
+    <ul class="entries" role="list" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,15rem),1fr))">
+      <li class="entry"><h3>Des méthodes validées</h3><p>Nous suivons les recommandations de bonne pratique de la Haute Autorité de santé et utilisons des épreuves standardisées, régulièrement mises à jour.</p></li>
+      <li class="entry"><h3>Des explications claires</h3><p>Un compte rendu se lit sans dictionnaire. Nous prenons le temps d'expliquer les résultats et de répondre aux questions, y compris à celles de l'enfant.</p></li>
+      <li class="entry"><h3>Un travail en réseau</h3><p>Avec votre accord, nous échangeons avec le médecin, l'école, l'orthophoniste ou l'ergothérapeute, pour que les recommandations soient appliquées.</p></li>
+      <li class="entry"><h3>Le secret professionnel</h3><p>Ce qui se dit au cabinet y reste. Aucune information n'est transmise à quiconque sans votre accord.</p></li>
+    </ul>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="lieu-titre">
+  <div class="wrap split">
+    <div>
+      <h2 id="lieu-titre">Venir au cabinet</h2>
+    </div>
+    <div>
+      <dl class="facts" style="grid-template-columns:1fr">
+        <div><dt>Adresse</dt><dd>{{cfg:address_street}}, {{cfg:postal_code}} Rennes</dd></div>
+        <div><dt>Accès</dt><dd>{{cfg:access}}</dd></div>
+        <div><dt>Horaires</dt><dd>{{cfg:hours}}</dd></div>
+      </dl>
+      <p class="mt-m"><a href="{{root}}contact/">Toutes les informations de contact</a></p>
+    </div>
+  </div>
+</section>
+
+{{cta}}
