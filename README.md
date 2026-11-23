@@ -16,6 +16,14 @@ Site du cabinet de neuropsychologie NeuroBreizh (Rennes), publié avec GitHub Pa
 
 Les fichiers `index.html` des dossiers de pages sont **générés** : on ne les modifie pas à la main.
 
+## Suivi des jeux (« Mon suivi » et « Espace praticien »)
+
+- `assets/js/suivi.js` enregistre chaque partie terminée dans le stockage local du navigateur du patient (clé `nb-suivi`) : date, jeu, exercice, niveau, durée, score, précision, temps de réaction. Rien n'est envoyé sur Internet, donc pas d'hébergement de données de santé.
+- `suivi/` : page du patient (profils, régularité, minutes par semaine, courbes par jeu, export et import d'un fichier `.json`).
+- `suivi/praticien/` : page du praticien (non référencée) qui ouvre les fichiers exportés et affiche les mêmes graphiques, une synthèse par niveau et le détail des parties. Bouton « Afficher un exemple fictif » pour la démonstration.
+- `_src/patch_games.py` branche un jeu sur le suivi (début et fin de partie). Pour un nouveau jeu : ajouter ses deux ancres dans ce script, et le jeu dans `_src/games.json` et dans `GAMES` de `assets/js/suivi.js`.
+- Important : le stockage local dépend de l'adresse du site. Passer au nom de domaine définitif **avant** que les patients commencent, sinon leur historique reste attaché à l'ancienne adresse (ils peuvent toutefois l'exporter puis l'importer).
+
 ## Compléter les informations du cabinet
 
 1. Remplir les champs `null` de `_src/site.json`.

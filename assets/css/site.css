@@ -46,6 +46,7 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
 
 html {
   -webkit-text-size-adjust: 100%;
@@ -883,6 +884,122 @@ strong { font-weight: 640; }
 .legal h2:first-child { margin-top: 0; }
 .legal p, .legal li { color: var(--texte-doux); }
 .legal ul { padding-left: 1.2em; }
+
+
+/* ---------------- Suivi : formulaires ---------------- */
+
+.profile-bar { display: flex; flex-wrap: wrap; gap: 1rem 1.5rem; align-items: flex-end; padding: 1.25rem 1.5rem; background: var(--brume); border-radius: var(--radius-m); }
+.field { display: flex; flex-direction: column; gap: 0.375rem; }
+.field label { font-size: var(--t-s); font-weight: 600; color: var(--marine); }
+.field-inline { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; margin: 0; }
+.field input, .field select {
+  min-height: 3rem; min-width: 15rem; padding: 0.625rem 0.875rem;
+  font: inherit; font-size: 1rem; color: var(--texte);
+  background: var(--blanc); border: 1.5px solid #B9C7CB; border-radius: var(--radius-s);
+}
+.field input:focus-visible, .field select:focus-visible { border-color: var(--sarcelle); }
+.field input::placeholder { color: #7A8796; }
+.btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+.btn-danger, .btn-danger:hover { background: #9B2C2C; border-color: #9B2C2C; color: var(--blanc); }
+.file-btn { position: relative; }
+.file-btn:focus-within { box-shadow: var(--focus); }
+@media (max-width: 29.99em) { .field input, .field select { min-width: 0; width: 100%; } .field, .field-inline { width: 100%; } }
+
+/* ---------------- Suivi : tableau de bord ---------------- */
+
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; list-style: none; padding: 0; }
+.tile { padding: 1.25rem 1.5rem; border-top: 2px solid var(--marine); background: var(--blanc); }
+.tile-label { display: block; font-size: var(--t-s); color: var(--texte-doux); }
+.tile-value { display: block; margin-top: 0.25rem; font-family: var(--f-texte); font-size: 2.25rem; font-weight: 650; letter-spacing: -0.02em; line-height: 1.1; color: var(--marine); }
+.tile-sub { display: block; margin-top: 0.375rem; font-size: var(--t-xs); color: var(--texte-doux); }
+@media (max-width: 47.99em) { .tiles { grid-template-columns: 1fr; } }
+
+.suivi-block { margin-top: clamp(2.5rem, 2rem + 2vw, 4rem); }
+.suivi-block > h2, .suivi-split h2 { font-size: clamp(1.625rem, 1.3rem + 1.2vw, 2.125rem); }
+.suivi-block > h2 + p, .suivi-split h2 + p { margin-top: 0.5rem; max-width: 40em; }
+.suivi-split { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: clamp(2rem, 1rem + 3vw, 4rem); }
+@media (max-width: 59.99em) { .suivi-split { grid-template-columns: 1fr; } }
+
+.chart { position: relative; margin-top: 0.75rem; min-height: 120px; }
+.chart svg { display: block; overflow: visible; }
+.chart .tick { font-size: 11px; fill: var(--texte-doux); font-family: var(--f-texte); font-variant-numeric: tabular-nums; }
+.chart .lvl { font-size: 11px; fill: var(--marine); font-weight: 600; font-family: var(--f-texte); }
+.chart .endval { font-size: 12px; fill: var(--marine); font-weight: 650; font-family: var(--f-texte); }
+.chart .band-label { font-size: 11px; fill: var(--sarcelle-dark); font-weight: 600; font-family: var(--f-texte); }
+.chart .hit { cursor: pointer; outline: none; }
+.chart .hit:focus-visible { stroke: var(--sarcelle); stroke-width: 2; }
+.chart-title { margin-top: 1.25rem; font-size: var(--t-s); font-weight: 600; color: var(--marine); }
+
+.heat { display: grid; grid-template-columns: repeat(7, minmax(0, 2.75rem)); gap: 4px; margin-top: 1rem; position: relative; }
+.heat-head { font-size: var(--t-xs); color: var(--texte-doux); text-align: center; }
+.heat-cell { aspect-ratio: 1; border-radius: 4px; outline: none; }
+.heat-cell.is-today { box-shadow: inset 0 0 0 2px var(--marine); }
+.heat-cell.is-future { box-shadow: inset 0 0 0 1px var(--brume-line); }
+.heat-cell:focus-visible { box-shadow: 0 0 0 2px var(--blanc), 0 0 0 4px var(--sarcelle); }
+.heat-legend { display: flex; flex-wrap: wrap; gap: 0.375rem 1rem; list-style: none; padding: 0; margin-top: 0.875rem; font-size: var(--t-xs); color: var(--texte-doux); }
+.heat-legend li { display: flex; align-items: center; gap: 0.375rem; }
+.heat-legend .sw { width: 0.875rem; height: 0.875rem; border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(21,40,63,0.08); }
+
+.game-charts { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 30rem), 1fr)); gap: 2rem 2.5rem; margin-top: 1.5rem; }
+.game-chart { padding-top: 1.25rem; border-top: 2px solid var(--marine); }
+.game-chart h3 { font-size: var(--t-l); }
+.game-chart h3 .ex { font-weight: 500; color: var(--texte-doux); }
+.game-chart .fn { margin-top: 0.25rem; font-size: var(--t-s); color: var(--texte-doux); }
+
+.nb-tip {
+  position: absolute; z-index: 60; display: none; max-width: 17rem;
+  padding: 0.625rem 0.75rem; border-radius: 8px;
+  background: var(--marine-deep); color: #E8EEF2;
+  font-family: var(--f-texte); font-size: 0.8125rem; line-height: 1.45;
+  box-shadow: 0 10px 24px -10px rgba(15,30,49,0.6); pointer-events: none;
+}
+.nb-tip strong { color: var(--blanc); font-weight: 650; }
+
+.table-scroll { overflow-x: auto; margin-top: 1rem; }
+.table-scroll:focus-visible { box-shadow: var(--focus); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-s); }
+table.data th, table.data td { padding: 0.625rem 0.75rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--brume-line); }
+table.data thead th { font-weight: 650; color: var(--marine); border-bottom: 2px solid var(--marine); white-space: nowrap; }
+table.data tbody th { font-weight: 600; color: var(--marine); }
+table.data .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.data .det { color: var(--texte-doux); font-size: var(--t-xs); min-width: 14rem; }
+.all-sessions summary { cursor: pointer; font-weight: 650; font-size: var(--t-l); color: var(--marine); padding: 0.75rem 0; }
+.all-sessions summary:hover { color: var(--sarcelle); }
+
+.empty { padding: clamp(2rem, 1.5rem + 2vw, 3.5rem); background: var(--brume); border-radius: var(--radius-m); }
+.empty h2 { font-size: clamp(1.625rem, 1.3rem + 1.2vw, 2.125rem); }
+.empty p { margin-top: 0.75rem; max-width: 36em; color: var(--texte-doux); }
+.empty .btn { margin-top: 0.5rem; }
+
+.suivi-actions { margin-top: clamp(3rem, 2.5rem + 2vw, 4.5rem); padding-top: 2rem; border-top: 1px solid var(--brume-line); }
+.suivi-actions h2 { font-size: clamp(1.625rem, 1.3rem + 1.2vw, 2.125rem); }
+.suivi-actions > p { margin-top: 0.75rem; max-width: 40em; }
+
+.dropzone {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.375rem;
+  min-height: 11rem; padding: 2rem; text-align: center; cursor: pointer;
+  border: 2px dashed #9FB3BA; border-radius: var(--radius-m); background: var(--brume);
+}
+.dropzone:hover, .dropzone.is-over { border-color: var(--sarcelle); background: #E1EEEF; }
+.dropzone:focus-within { box-shadow: var(--focus); }
+.dz-title { font-weight: 650; font-size: var(--t-l); color: var(--marine); }
+.dz-sub { font-size: var(--t-s); color: var(--texte-doux); }
+.patients { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 2rem; }
+.patient-tab { min-height: 2.75rem; padding: 0.5rem 1rem; font: inherit; font-size: var(--t-s); font-weight: 600; color: var(--marine); background: var(--blanc); border: 1.5px solid #B9C7CB; border-radius: 999px; cursor: pointer; }
+.patient-tab[aria-pressed="true"] { background: var(--marine); border-color: var(--marine); color: var(--blanc); }
+.patient-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 1rem 2rem; margin-top: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--brume-line); }
+.patient-head h2 { font-size: clamp(2rem, 1.5rem + 2vw, 2.75rem); }
+.patient-head p { margin-top: 0.375rem; }
+.patient-head + #suivi-app { margin-top: 2rem; }
+
+@media print {
+  .page-hero, .dropzone, #demo-btn, #print-btn, .patients, .breadcrumb, .suivi-actions, .profile-bar { display: none !important; }
+  .section-tight { padding: 0 !important; }
+  .game-chart, .tile, .suivi-split > div { break-inside: avoid; }
+  .all-sessions { display: block; }
+  .all-sessions:not([open]) > :not(summary) { display: block; }
+  .chart .hit { display: none; }
+}
 
 /* ---------------- Utilitaires ---------------- */
 

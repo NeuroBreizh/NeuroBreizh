@@ -341,6 +341,7 @@ body::before{
 .intro-step-text{font-size:.83rem;line-height:1.4;color:var(--muted);}
 .intro-step-text strong{color:var(--text);}
 </style>
+<script src="../../assets/js/suivi.js"></script>
 </head>
 <body>
 <div id="toast"></div>
@@ -666,6 +667,7 @@ function setStatus(msg,cls=''){
 // ════════════════════════════════════════════════
 function launchGame(){
   cfg=CONFIGS[levelKey];
+  window.NBSuivi&&NBSuivi.start('oreille-musicale');
   score=0;errors=0;correct=0;streak=0;bestStreak=0;
   lives=cfg.maxErrors;round=0;running=true;sessionTok++;
   countdown(()=>startGame());
@@ -1086,6 +1088,7 @@ function showResults(){
   document.getElementById('res-badge').textContent=badge;
   document.getElementById('res-title').textContent=title;
   const pm=document.getElementById('res-perf');pm.textContent=msg;pm.className='perf-msg '+cls;
+  window.NBSuivi&&NBSuivi.record({game:'oreille-musicale',exercise:currentMode==='simple'?'Simple':'Divisée',level:cfg.endless?'Infini':({easy:'Facile',medium:'Moyen',hard:'Difficile'})[levelKey],score:score,accuracy:acc,errors:errors,correct:correct,details:{'Meilleure série':bestStreak}});
   showScreen('s-results');
 }
 

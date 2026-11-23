@@ -283,6 +283,7 @@ body::before{
 .key-del{color:var(--red);border-color:rgba(255,23,68,.3);}
 .key-ok{color:var(--green);border-color:rgba(0,230,118,.3);font-size:.7rem;letter-spacing:.5px;}
 </style>
+<script src="../../assets/js/suivi.js"></script>
 </head>
 <body>
 <div id="fb-toast"></div>
@@ -616,7 +617,7 @@ function countdown(cb){
   },900);
 }
 
-function startGame(game,lk){ ({signal:startSignal,grid:startGrid,nback:startNback,code:startCode})[game](lk); }
+function startGame(game,lk){ window.NBSuivi&&NBSuivi.start('station-mnemos'); ({signal:startSignal,grid:startGrid,nback:startNback,code:startCode})[game](lk); }
 
 // ═══════════════════════════════════════════════════════
 //  RESULTS
@@ -637,6 +638,7 @@ function showResults(title){
   else{badge='🎮';msg='🔄 Continue à pratiquer ! Chaque session renforce tes capacités cognitives.';cls='perf-c';}
   document.getElementById('res-badge').textContent=badge;
   const pm=document.getElementById('res-perf');pm.textContent=msg;pm.className='perf-msg '+cls;
+  window.NBSuivi&&NBSuivi.record({game:'station-mnemos',exercise:GAME_META[currentGame].name,level:LEVELS[currentGame][currentLevelKey].label,score:gScore,accuracy:total?Math.round(pct*100):null,errors:gErrors,correct:gCorrect,details:{'Meilleure série':gBestStreak}});
   showScreen('s-results');
 }
 

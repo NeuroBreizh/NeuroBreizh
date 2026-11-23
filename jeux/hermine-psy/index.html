@@ -244,6 +244,7 @@ body::before{
 /* RT display */
 .rt-display{font-family:'Baloo 2',cursive;font-weight:700;font-size:.8rem;color:var(--muted);text-align:center;}
 </style>
+<script src="../../assets/js/suivi.js"></script>
 </head>
 <body>
 <div id="toast"></div>
@@ -722,6 +723,7 @@ function animalCat(a,rule){
 // ══════════════════════════════════════════════════
 function launchGame(){
   cfg=CONFIGS[currentDiff];
+  window.NBSuivi&&NBSuivi.start('hermine-psy');
   score=0;errors=0;correct=0;streak=0;bestStreak=0;
   lives=cfg.maxErrors;trial=0;rtList=[];running=true;
   sessionTok++;
@@ -757,6 +759,7 @@ function showResults(){
   document.getElementById('res-badge').textContent=badge;
   document.getElementById('res-title').textContent=title;
   const pm=document.getElementById('res-perf');pm.textContent=msg;pm.className='perf-msg '+cls;
+  window.NBSuivi&&NBSuivi.record({game:'hermine-psy',exercise:({find:'Identifier',react:'Catégoriser',sort:'Trier'})[currentMode],level:cfg.label,score:score,accuracy:acc,rt:avgRt,errors:errors,correct:correct,details:{'Meilleure série':bestStreak}});
   showScreen('s-results');
 }
 

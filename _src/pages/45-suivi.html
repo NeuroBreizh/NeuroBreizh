@@ -1,0 +1,49 @@
+<!--meta {"path": "suivi/", "section": "jeux", "short": "Mon suivi", "crumbs": [["Jeux cognitifs", "jeux/"]], "title": "Mon suivi : progression dans les jeux cognitifs | NeuroBreizh", "description": "Vos parties des jeux NeuroBreizh, enregistrées sur votre appareil uniquement : régularité, minutes par semaine et progression par jeu, à exporter pour la séance au cabinet.", "priority": "0.5", "scripts": ["assets/js/suivi.js", "assets/js/suivi-vue.js", "assets/js/suivi-pages.js"]} -->
+<section class="page-hero">
+  <div class="wrap">
+    {{breadcrumb}}
+    <h1>Mon suivi</h1>
+    <p class="lede">Vos parties des jeux NeuroBreizh, avec votre régularité et vos courbes de progression. Tout est enregistré sur cet appareil uniquement : rien n'est envoyé sur Internet.</p>
+  </div>
+</section>
+
+<section class="section-tight" data-suivi="patient" data-games="{{root}}jeux/">
+  <div class="wrap">
+    <div class="note" id="storage-warning" hidden><strong>Ce navigateur bloque l'enregistrement.</strong> C'est souvent le cas en navigation privée. Ouvrez les jeux dans une fenêtre normale pour que vos parties soient conservées.</div>
+
+    <div class="profile-bar">
+      <div class="field" hidden>
+        <label for="profile-select">Profil affiché</label>
+        <select id="profile-select"></select>
+      </div>
+      <form id="profile-form" class="field-inline">
+        <div class="field">
+          <label for="profile-name">Prénom ou code</label>
+          <input id="profile-name" type="text" maxlength="40" autocomplete="off" placeholder="Par exemple : Léa, ou L-2026">
+        </div>
+        <button class="btn btn-quiet" type="submit">Enregistrer</button>
+      </form>
+      <button class="btn btn-quiet" type="button" id="profile-add">Ajouter un profil</button>
+    </div>
+    <p class="small muted mt-s">Plusieurs enfants jouent sur la même tablette ? Créez un profil pour chacun, et choisissez le bon avant de jouer.</p>
+
+    <div id="suivi-status" class="visually-hidden" role="status" aria-live="polite"></div>
+
+    <div id="suivi-app" class="mt-m"><noscript><p>Le suivi a besoin de JavaScript pour s'afficher.</p></noscript></div>
+
+    <div class="suivi-actions">
+      <h2>Pour la séance au cabinet</h2>
+      <p class="muted">Exportez vos résultats dans un fichier et apportez-le, ou envoyez-le au cabinet avant la séance. Ce fichier sert aussi à retrouver votre historique sur un autre appareil.</p>
+      <div class="actions mt-s">
+        <button class="btn btn-primary" type="button" id="export-btn">Exporter mes résultats</button>
+        <label class="btn btn-quiet file-btn">Importer un fichier<input type="file" id="import-file" accept=".json,application/json" class="visually-hidden"></label>
+      </div>
+      <div class="actions mt-m">
+        <button class="btn btn-quiet" type="button" id="delete-btn">Supprimer ce profil</button>
+        <button class="btn btn-quiet" type="button" id="delete-cancel" hidden>Annuler</button>
+      </div>
+    </div>
+
+    <div class="note mt-l"><strong>Vos données restent chez vous.</strong> Les résultats sont gardés dans ce navigateur, sur cet appareil. Si vous effacez les données du navigateur ou changez d'appareil, l'historique disparaît, sauf si vous l'avez exporté. Ces scores servent à suivre une évolution : ce ne sont pas des tests et ils ne permettent pas de poser un diagnostic.</div>
+  </div>
+</section>

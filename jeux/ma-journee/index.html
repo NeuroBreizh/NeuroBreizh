@@ -285,6 +285,7 @@ body::before{
 .mode-badge-steps{background:rgba(46,111,218,.12);color:var(--blue);}
 .mode-badge-conseq{background:rgba(124,58,237,.12);color:var(--purple);}
 </style>
+<script src="../../assets/js/suivi.js"></script>
 </head>
 <body>
 <div id="toast"></div>
@@ -794,6 +795,7 @@ function updateHUD(){
 // ══════════════════════════════════════════════════════
 function launchGame(){
   cfg=CONFIGS[levelKey];
+  window.NBSuivi&&NBSuivi.start('ma-journee');
   score=0;errors=0;correct=0;streak=0;bestStreak=0;lives=cfg.maxErrors;qIndex=0;
   running=true;sessionTok++;answered=false;
   usedPlanning=new Set();usedSteps=new Set();usedConseq=new Set();
@@ -1262,6 +1264,7 @@ function showResults(){
   document.getElementById('res-badge').textContent=badge;
   document.getElementById('res-title').textContent=title;
   const pm=document.getElementById('res-perf');pm.textContent=msg;pm.className='perf-msg '+cls;
+  window.NBSuivi&&NBSuivi.record({game:'ma-journee',exercise:({plan:'Planning',steps:'Étapes',conseq:'Conséquences'})[currentMode],level:cfg.label,score:score,accuracy:acc,errors:errors,correct:correct,details:{'Meilleure série':bestStreak}});
   showScreen('s-results');
 }
 

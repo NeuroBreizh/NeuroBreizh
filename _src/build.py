@@ -370,6 +370,7 @@ def render(meta, body):
         <h2>S'informer</h2>
         <ul role="list">
           <li><a href="{root}jeux/">Jeux cognitifs</a></li>
+          <li><a href="{root}suivi/">Mon suivi</a></li>
           <li><a href="{root}ressources/">Ressources</a></li>
           <li><a href="{root}questions-frequentes/">Questions fréquentes</a></li>
           <li><a href="{root}cabinet/">Le cabinet</a></li>
@@ -390,7 +391,7 @@ def render(meta, body):
     </div>
   </div>
 </footer>
-<script src="{root}assets/js/site.js" defer></script>
+{''.join(f'<script src="{root}{s}" defer></script>' for s in meta.get('scripts', []))}<script src="{root}assets/js/site.js" defer></script>
 </body>
 </html>
 """

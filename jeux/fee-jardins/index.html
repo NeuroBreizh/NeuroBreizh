@@ -246,6 +246,7 @@ body::before{
 .intro-step-text{font-size:.85rem;line-height:1.4;color:var(--muted);}
 .intro-step-text strong{color:var(--text);}
 </style>
+<script src="../../assets/js/suivi.js"></script>
 </head>
 <body>
 <div id="toast"></div>
@@ -487,6 +488,7 @@ function countdown(cb){
 //  GAME START
 // ═══════════════════════════════════════════════
 function startGame(){
+  window.NBSuivi&&NBSuivi.start('fee-jardins');
   showScreen('s-game');
   updateHUD();
   startTimer();
@@ -723,6 +725,7 @@ function endGame(){
   document.getElementById('res-badge').textContent=badge;
   document.getElementById('res-title').textContent=title;
   const pm=document.getElementById('res-perf');pm.textContent=msg;pm.className='perf-msg '+cls;
+  window.NBSuivi&&NBSuivi.record({game:'fee-jardins',level:cfg.label,score:score,accuracy:overall,errors:errors,correct:potionsOk+intrusBlocked,details:{'Bulles bien comptées':potionsOk+' / '+potionsTried,'Intrus arrêtés':intrusBlocked+' / '+intrusTotal,'Meilleure série':bestStreak}});
   showScreen('s-results');
 }
 

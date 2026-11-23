@@ -456,6 +456,7 @@
     100% { opacity: 0; transform: translateX(-50%) translateY(-40px); }
   }
 </style>
+<script src="../../assets/js/suivi.js"></script>
 </head>
 <body>
 <div class="wrapper">
@@ -727,6 +728,7 @@ function buildTrialList(n, goPct) {
 }
 
 function startGame() {
+  window.NBSuivi&&NBSuivi.start('reflexes-controle');
   showScreen('screen-game');
   const tag = document.getElementById('level-tag');
   tag.textContent = config.label;
@@ -944,6 +946,7 @@ function endGame() {
   pm.textContent = msg;
   pm.className = 'perf-msg ' + cls;
 
+  window.NBSuivi&&NBSuivi.record({game:'reflexes-controle',level:config.label,score:score,accuracy:overall,rt:avgRt,errors:goMisses+nogoFails,correct:goHits+nogoCorr,details:{'Réponses aux cibles (%)':goAcc,'Retenues réussies (%)':nogoAcc,'Omissions':goMisses,'Erreurs de commission':nogoFails}});
   showScreen('screen-results');
 }
 </script>

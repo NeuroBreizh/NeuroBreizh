@@ -321,6 +321,7 @@ body::after {
   100% { transform: scale(1); opacity: 1; }
 }
 </style>
+<script src="../../assets/js/suivi.js"></script>
 </head>
 <body>
 <div id="toast"></div>
@@ -681,6 +682,7 @@ function bfsPath(start, end) {
 // ════════════════════════════════════════
 function initGame() {
   config = LEVELS[levelKey];
+  window.NBSuivi&&NBSuivi.start('donjon-des-regles');
   maze = generateMaze(config.size);
 
   player = {x:1, y:1};
@@ -1022,6 +1024,7 @@ function endGame(gameOver=false) {
   const pm = document.getElementById('perf-msg');
   pm.textContent = msg; pm.className = 'perf-msg ' + cls;
 
+  window.NBSuivi&&NBSuivi.record({game:'donjon-des-regles',level:config.name,score:score,errors:config.endless?wallErrors:null,details:Object.assign({'Pas':steps,'Changements de règle':rulesTriggered,'Gemmes':gemsCollected,'Temps (s)':elapsed},config.endless?{'Donjons franchis':mazesCompleted}:{})});
   setTimeout(()=>showScreen('screen-results'), gameOver ? 800 : 500);
 }
 

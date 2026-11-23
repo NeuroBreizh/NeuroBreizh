@@ -1,0 +1,30 @@
+<!--meta {"path": "suivi/praticien/", "section": "", "short": "Espace praticien", "crumbs": [["Mon suivi", "suivi/"]], "title": "Espace praticien : lire un fichier de suivi | NeuroBreizh", "description": "Ouvrir les fichiers de suivi exportés par les patients pour afficher leurs graphiques de progression, sur cet ordinateur uniquement.", "noindex": true, "scripts": ["assets/js/suivi.js", "assets/js/suivi-vue.js", "assets/js/suivi-pages.js"]} -->
+<section class="page-hero">
+  <div class="wrap">
+    {{breadcrumb}}
+    <h1>Espace praticien</h1>
+    <p class="lede">Ouvrez le fichier de suivi exporté par un patient : ses graphiques s'affichent sur cet ordinateur. Aucun fichier n'est envoyé ni conservé ; fermer la page efface l'affichage.</p>
+  </div>
+</section>
+
+<section class="section-tight" data-suivi="praticien">
+  <div class="wrap">
+    <label class="dropzone" id="dropzone">
+      <span class="dz-title">Déposer un ou plusieurs fichiers de suivi</span>
+      <span class="dz-sub">ou cliquer ici pour les choisir. Format : suivi-neurobreizh-….json</span>
+      <input type="file" id="praticien-files" accept=".json,application/json" multiple class="visually-hidden">
+    </label>
+    <p class="mt-s"><button class="btn btn-quiet" type="button" id="demo-btn">Afficher un exemple fictif</button></p>
+
+    <div id="suivi-status" class="visually-hidden" role="status" aria-live="polite"></div>
+
+    <div id="patients" class="patients" hidden></div>
+
+    <div class="patient-head" id="patient-head" hidden>
+      <div><h2></h2><p class="muted"></p></div>
+      <button class="btn btn-quiet" type="button" id="print-btn" hidden>Imprimer ou enregistrer en PDF</button>
+    </div>
+
+    <div id="suivi-app"></div>
+  </div>
+</section>
